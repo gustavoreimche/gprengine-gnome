@@ -17,7 +17,8 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Gtk  # noqa: E402
 
-from . import APP_ID, OBJECT_PATH, SCHEMA_ID, gl, packages  # noqa: E402
+from . import APP_ID, OBJECT_PATH, gl, packages  # noqa: E402
+from .settings import load_settings  # noqa: E402
 
 INTERFACE_XML = f"""
 <node>
@@ -47,20 +48,6 @@ THUMB_SIZE = (480, 300)
 THUMB_TIME = 5.0
 # Um salto maior que isso entre dois quadros é engasgo, não animação.
 MAX_DELTA = 0.25
-
-
-def load_settings():
-    schema_dir = os.path.join(packages.REPO, 'schemas')
-    try:
-        source = Gio.SettingsSchemaSource.new_from_directory(
-            schema_dir, Gio.SettingsSchemaSource.get_default(), False)
-    except GLib.Error:
-        source = Gio.SettingsSchemaSource.get_default()
-    schema = source.lookup(SCHEMA_ID, True) if source else None
-    if schema is None:
-        raise SystemExit(
-            f'Schema {SCHEMA_ID} não encontrado. Rode ./install.sh.')
-    return Gio.Settings.new_full(schema, None, None)
 
 
 class WallpaperWindow(Gtk.Window):

@@ -86,6 +86,13 @@ class LiveLayer extends Clutter.Actor {
     }
 });
 
+// O Mutter não desenha a parte de uma janela que está atrás de outra, e esse
+// recorte valeria também para o clone no fundo: sobraria um buraco no
+// wallpaper atrás de cada janela aberta. Atores com efeito ficam fora dessa
+// otimização; este efeito não faz mais nada.
+const KeepWholeEffect = GObject.registerClass(
+class PrimoEngineKeepWholeEffect extends Clutter.Effect {});
+
 // Põe as janelas do renderer na camada de fundo e as esconde de tudo que
 // lista janelas (Alt+Tab, visão geral, docks).
 export class WallpaperManager {
@@ -134,6 +141,7 @@ export class WallpaperManager {
 
         // O que aparece é o clone no fundo; a janela de verdade fica invisível.
         actor.opacity = 0;
+        actor.add_effect_with_name('primoengine-keep-whole', new KeepWholeEffect());
         window.stick();
         window.lower();
 
@@ -295,6 +303,7 @@ export class WallpaperManager {
         for (const [window, entry] of this._windows) {
             window.disconnectObject(this);
             entry.actor.disconnectObject(this);
+            entry.actor.remove_effect_by_name('primoengine-keep-whole');
         }
         this._windows.clear();
         for (const layer of [...this._layers])
