@@ -1,4 +1,5 @@
 import Clutter from 'gi://Clutter';
+import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
@@ -100,6 +101,7 @@ export class WallpaperManager {
         this._process = process;
         this._windows = new Map();
         this._layers = new Set();
+        this._refuseId = 0;
         this._injections = new InjectionManager();
 
         this._hideFromShell();
@@ -214,16 +216,25 @@ export class WallpaperManager {
     }
 
     // A janela do renderer não aceita teclado; se o shell lhe der o foco,
-    // devolve para a janela usada por último.
+    // devolve para a janela usada por último. Espera o shell ficar ocioso:
+    // o foco costuma chegar no meio do fechamento de outra janela, que ainda
+    // está na lista e não pode mais ser focada.
     _refuseFocus() {
-        if (!this._windows.has(global.display.focus_window))
+        if (this._refuseId || !this._windows.has(global.display.focus_window))
             return;
-        const workspace = global.workspace_manager.get_active_workspace();
-        const [next] = global.display.get_tab_list(Meta.TabList.NORMAL, workspace);
-        if (next)
-            next.focus(global.get_current_time());
-        else
-            global.display.unset_input_focus(global.get_current_time());
+        this._refuseId = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+            this._refuseId = 0;
+            if (!this._windows.has(global.display.focus_window))
+                return GLib.SOURCE_REMOVE;
+            const workspace = global.workspace_manager.get_active_workspace();
+            const [next] = global.display.get_tab_list(
+                Meta.TabList.NORMAL, workspace);
+            if (next)
+                next.focus(global.get_current_time());
+            else
+                global.display.unset_input_focus(global.get_current_time());
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
     // --- camadas no fundo ---
@@ -297,6 +308,10 @@ export class WallpaperManager {
     }
 
     destroy() {
+        if (this._refuseId) {
+            GLib.source_remove(this._refuseId);
+            this._refuseId = 0;
+        }
         global.display.disconnectObject(this);
         Main.layoutManager.disconnectObject(this);
         this._injections.clear();

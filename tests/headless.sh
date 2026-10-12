@@ -39,6 +39,16 @@ start)
     chmod 700 "$ROOT/rt"
     ln -s "$REPO" "$ROOT/data/gnome-shell/extensions/$UUID"
     ln -s "$REPO/wallpapers" "$ROOT/data/primoengine/wallpapers"
+    mkdir -p "$ROOT/data/applications"
+    sed "s#@REPO@#$REPO#" "$REPO/data/dev.gpr.PrimoEngine.Gallery.desktop.in" \
+        > "$ROOT/data/applications/dev.gpr.PrimoEngine.Gallery.desktop"
+    enabled="['$UUID']"
+    # PRIMODOCK=<pasta do primodock-gnome>: carrega o dock junto, com o tile
+    # do PrimoEngine, para testar a integração.
+    if [ -n "${PRIMODOCK:-}" ]; then
+        ln -s "$PRIMODOCK" "$ROOT/data/gnome-shell/extensions/primodock@gpr"
+        enabled="['$UUID', 'primodock@gpr']"
+    fi
     session_env
     unset DBUS_SESSION_BUS_ADDRESS
     setsid dbus-run-session -- bash -c '
@@ -47,9 +57,13 @@ start)
         gsettings set org.gnome.shell disable-user-extensions false
         gsettings set org.gnome.shell enabled-extensions "$2"
         gsettings set org.gnome.shell welcome-dialog-last-shown-version 999
+        if [ -n "${PRIMODOCK:-}" ]; then
+            gsettings --schemadir "$PRIMODOCK/schemas" set \
+                org.gnome.shell.extensions.primodock widgets "[\"engine\", \"battery\"]"
+        fi
         exec gnome-shell --headless --wayland --no-x11 --unsafe-mode \
             --virtual-monitor "$1" --wayland-display "$WAYLAND_DISPLAY"
-    ' "$ROOT" "$size" "['$UUID']" > "$ROOT/shell.log" 2>&1 &
+    ' "$ROOT" "$size" "$enabled" > "$ROOT/shell.log" 2>&1 &
     echo $! > "$ROOT/pid"
     for _ in $(seq 50); do
         [ -S "$ROOT/rt/primo-test" ] && [ -s "$ROOT/bus" ] && { echo "pronto"; exit 0; }

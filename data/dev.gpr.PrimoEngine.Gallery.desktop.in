@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=PrimoEngine
+Comment=Wallpapers vivos: escolher e ajustar
+Exec=@REPO@/bin/primoengine-gallery
+Icon=dev.gpr.PrimoEngine.Gallery
+Terminal=false
+Categories=Utility;GTK;
+Keywords=wallpaper;papel de parede;fundo;shader;
+StartupNotify=true

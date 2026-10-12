@@ -258,6 +258,16 @@ class Engine(Gtk.Application):
 
     # --- ciclo de vida ---
 
+    def do_dbus_register(self, connection, object_path):
+        # Aqui, e não no startup: o objeto precisa existir antes de o nome
+        # aparecer no barramento, senão quem observa o nome chama cedo demais.
+        Gtk.Application.do_dbus_register(self, connection, object_path)
+        node = Gio.DBusNodeInfo.new_for_xml(INTERFACE_XML)
+        self._registration = connection.register_object(
+            OBJECT_PATH, node.interfaces[0], self._on_method_call,
+            self._on_get_property, None)
+        return True
+
     def do_startup(self):
         Gtk.Application.do_startup(self)
         self.settings = load_settings()
@@ -266,11 +276,6 @@ class Engine(Gtk.Application):
         self.settings.connect('changed::fps-limit', self._on_draw_setting)
         self.packages = packages.discover()
         self.current = self.settings.get_string('current')
-
-        node = Gio.DBusNodeInfo.new_for_xml(INTERFACE_XML)
-        self._registration = self.get_dbus_connection().register_object(
-            OBJECT_PATH, node.interfaces[0], self._on_method_call,
-            self._on_get_property, None)
 
         self.hold()
         monitors = Gdk.Display.get_default().get_monitors()
