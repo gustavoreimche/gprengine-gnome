@@ -255,6 +255,7 @@ class Engine(Gtk.Application):
         self.gl_version = ''
         self._elapsed = 0.0
         self._resumed_at = time.monotonic()
+        self._speed = 1.0
         self._validated = False
         self._registration = 0
         self._fps_window = (time.monotonic(), 0, 0.0)
@@ -277,6 +278,8 @@ class Engine(Gtk.Application):
         self.settings.connect('changed::current', self._on_current_setting)
         self.settings.connect('changed::render-scale', self._on_draw_setting)
         self.settings.connect('changed::fps-limit', self._on_draw_setting)
+        self.settings.connect('changed::speed', self._on_speed_setting)
+        self._speed = self.settings.get_double('speed')
         self.packages = packages.discover()
         self.current = self.settings.get_string('current')
 
@@ -327,7 +330,7 @@ class Engine(Gtk.Application):
         """Segundos de animação. Não anda enquanto pausado."""
         if self.paused:
             return self._elapsed
-        return self._elapsed + time.monotonic() - self._resumed_at
+        return self._elapsed + (time.monotonic() - self._resumed_at) * self._speed
 
     @staticmethod
     def date():
@@ -354,7 +357,7 @@ class Engine(Gtk.Application):
         if was == self.paused:
             return
         if self.paused:
-            self._elapsed += time.monotonic() - self._resumed_at
+            self._elapsed += (time.monotonic() - self._resumed_at) * self._speed
         else:
             self._resumed_at = time.monotonic()
         for window in self.windows.values():
@@ -476,6 +479,15 @@ class Engine(Gtk.Application):
         except ValueError as e:
             print(f'gprengine: {e}', file=sys.stderr)
 
+    def _on_speed_setting(self, settings, _key):
+        # Fecha a conta do tempo já decorrido na velocidade antiga: a animação
+        # segue de onde está, sem saltar.
+        now = time.monotonic()
+        if not self.paused:
+            self._elapsed += (now - self._resumed_at) * self._speed
+        self._resumed_at = now
+        self._speed = settings.get_double('speed')
+
     def _on_draw_setting(self, *_):
         self.redraw()
 
@@ -514,6 +526,7 @@ class Engine(Gtk.Application):
             'power_saving': self.power_saving,
             'current': self.current,
             'render_scale': self.render_scale,
+            'speed': self._speed,
             'gl_renderer': self.gl_renderer,
             'gl_version': self.gl_version,
             'windows': [{'title': w.get_title(), 'size': w.size,

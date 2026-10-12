@@ -25,6 +25,11 @@
       <default>30</default>
       <summary>Limite de quadros por segundo</summary>
     </key>
+    <key name="speed" type="d">
+      <range min="0.1" max="4.0"/>
+      <default>1.0</default>
+      <summary>Velocidade da animação (1.0 é a do autor do wallpaper)</summary>
+    </key>
     <key name="pause-when-covered" type="b">
       <default>true</default>
       <summary>Pausar quando as janelas cobrem a área de trabalho</summary>

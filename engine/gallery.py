@@ -214,8 +214,47 @@ class GalleryWindow(Adw.ApplicationWindow):
         self.settings.connect(f'changed::{key}', sync)
         return row
 
+    def _build_speed(self):
+        group = Adw.PreferencesGroup(title='Animação')
+        row = Adw.ActionRow(
+            title='Velocidade',
+            subtitle='Vale para todos os wallpapers e muda na hora')
+
+        adjustment = Gtk.Adjustment(lower=0.1, upper=3.0, step_increment=0.05,
+                                    page_increment=0.25)
+        self.settings.bind('speed', adjustment, 'value',
+                           Gio.SettingsBindFlags.DEFAULT)
+        scale = Gtk.Scale(adjustment=adjustment, draw_value=False,
+                          hexpand=True, valign=Gtk.Align.CENTER)
+        scale.set_size_request(260, -1)
+        for mark in (0.5, 1.0, 2.0):
+            scale.add_mark(mark, Gtk.PositionType.BOTTOM, None)
+
+        value = Gtk.Label(width_chars=5, xalign=1)
+        value.add_css_class('numeric')
+
+        def show(*_):
+            text = f'{adjustment.get_value():.2f}'.replace('.', ',')
+            value.set_label(f'{text}×')
+
+        adjustment.connect('value-changed', show)
+        show()
+
+        reset = Gtk.Button(icon_name='edit-undo-symbolic',
+                           tooltip_text='Voltar à velocidade original',
+                           valign=Gtk.Align.CENTER)
+        reset.add_css_class('flat')
+        reset.connect('clicked', lambda *_: adjustment.set_value(1.0))
+
+        row.add_suffix(scale)
+        row.add_suffix(value)
+        row.add_suffix(reset)
+        group.add(row)
+        return group
+
     def _build_settings(self):
         page = Adw.PreferencesPage()
+        page.add(self._build_speed())
 
         pause = Adw.PreferencesGroup(
             title='Pausa automática',
