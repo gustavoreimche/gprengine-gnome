@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "vitral",
+  "name": "Vitral",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}

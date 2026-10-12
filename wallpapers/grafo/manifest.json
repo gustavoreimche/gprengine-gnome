@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "grafo",
+  "name": "Grafo",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}

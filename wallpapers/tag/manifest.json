@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "tag",
+  "name": "Tag",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}

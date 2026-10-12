@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "golgota",
+  "name": "Gólgota",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}
