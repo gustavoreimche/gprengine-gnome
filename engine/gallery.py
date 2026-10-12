@@ -129,11 +129,15 @@ class GalleryWindow(Adw.ApplicationWindow):
         self.proxy = None
         self._current = ''
         self._pkgs = None
+        self._list_rows = {}
+        self._list_pkgs = None
 
         self.stack = Adw.ViewStack()
         self.stack.add_titled_with_icon(
             self._build_wallpapers(), 'wallpapers', 'Wallpapers',
             'preferences-desktop-wallpaper-symbolic')
+        self.stack.add_titled_with_icon(
+            self._build_lists(), 'lists', 'Listas', 'view-list-symbolic')
         self.stack.add_titled_with_icon(
             self._build_settings(), 'settings', 'Ajustes',
             'preferences-system-symbolic')
@@ -263,6 +267,146 @@ class GalleryWindow(Adw.ApplicationWindow):
         group.add(row)
         return group
 
+    # --- listas ---
+
+    def _lists(self):
+        return self.settings.get_value('playlists').unpack()
+
+    def _set_lists(self, lists):
+        self.settings.set_value('playlists', GLib.Variant('a{sas}', lists))
+
+    def _build_lists(self):
+        page = Adw.PreferencesPage()
+
+        auto = Adw.PreferencesGroup(
+            title='Troca automática',
+            description='Escolha uma lista para o wallpaper ir trocando '
+                        'sozinho.')
+        self.active_row = Adw.ComboRow(title='Lista em uso')
+        self.active_row.connect('notify::selected', self._on_active_selected)
+        auto.add(self.active_row)
+
+        interval = Adw.SpinRow.new_with_range(1, 720, 1)
+        interval.set_title('Trocar a cada')
+        interval.set_subtitle('Minutos')
+        interval.set_value(self.settings.get_int('playlist-interval') / 60)
+        interval.connect('notify::value', lambda row, _p: self.settings.set_int(
+            'playlist-interval', int(row.get_value()) * 60))
+        auto.add(interval)
+
+        shuffle = Adw.SwitchRow(title='Ordem aleatória')
+        self.settings.bind('playlist-shuffle', shuffle, 'active',
+                           Gio.SettingsBindFlags.DEFAULT)
+        auto.add(shuffle)
+        page.add(auto)
+
+        self.lists_group = Adw.PreferencesGroup(
+            title='Minhas listas',
+            description='Abra uma lista e marque os wallpapers que fazem '
+                        'parte dela.')
+        self.new_list = Adw.EntryRow(title='Nova lista', show_apply_button=True)
+        self.new_list.connect('apply', self._on_new_list)
+        self.lists_group.add(self.new_list)
+        page.add(self.lists_group)
+
+        self.settings.connect('changed::playlists', lambda *_: self._sync_lists())
+        self.settings.connect('changed::playlist-active',
+                              lambda *_: self._sync_active())
+        self._sync_lists()
+        return page
+
+    def _sync_active(self):
+        names = [''] + list(self._lists())
+        active = self.settings.get_string('playlist-active')
+        index = names.index(active) if active in names else 0
+        if self.active_row.get_selected() != index:
+            self.active_row.set_selected(index)
+
+    def _on_active_selected(self, row, _pspec):
+        names = [''] + list(self._lists())
+        index = row.get_selected()
+        if index >= len(names):
+            return
+        if names[index] != self.settings.get_string('playlist-active'):
+            self.settings.set_string('playlist-active', names[index])
+
+    def _sync_lists(self):
+        lists = self._lists()
+        pkgs = [(p['id'], p['name']) for p in self._pkgs or []
+                if not p['error'] and not p['unsupported']]
+        if list(lists) != list(self._list_rows) or pkgs != self._list_pkgs:
+            # Mudou o conjunto de listas ou de wallpapers: refaz as linhas.
+            # Fora isso só os marcadores mudam, e a lista aberta fica aberta.
+            for row, _checks in self._list_rows.values():
+                self.lists_group.remove(row)
+            self._list_rows = {}
+            self._list_pkgs = pkgs
+            for name in lists:
+                self._list_rows[name] = self._build_list_row(name, pkgs)
+                self.lists_group.add(self._list_rows[name][0])
+            self.active_row.set_model(
+                Gtk.StringList.new(['Nenhuma'] + list(lists)))
+            self._sync_active()
+        for name, (row, checks) in self._list_rows.items():
+            ids = lists[name]
+            known = [i for i in ids if i in checks]
+            row.set_subtitle('Vazia' if not known else
+                             '1 wallpaper' if len(known) == 1 else
+                             f'{len(known)} wallpapers')
+            for pkg_id, check in checks.items():
+                if check.get_active() != (pkg_id in ids):
+                    check.set_active(pkg_id in ids)
+
+    def _build_list_row(self, name, pkgs):
+        row = Adw.ExpanderRow(title=GLib.markup_escape_text(name))
+        delete = Gtk.Button(icon_name='user-trash-symbolic',
+                            tooltip_text='Apagar esta lista',
+                            valign=Gtk.Align.CENTER)
+        delete.add_css_class('flat')
+        delete.connect('clicked', lambda *_: self._delete_list(name))
+        row.add_suffix(delete)
+        checks = {}
+        for pkg_id, pkg_name in pkgs:
+            check = Gtk.CheckButton(valign=Gtk.Align.CENTER)
+            check.connect('toggled', self._on_list_check, name, pkg_id)
+            item = Adw.ActionRow(title=GLib.markup_escape_text(pkg_name),
+                                 activatable_widget=check)
+            item.add_prefix(check)
+            row.add_row(item)
+            checks[pkg_id] = check
+        return row, checks
+
+    def _on_list_check(self, check, name, pkg_id):
+        lists = self._lists()
+        ids = lists.get(name)
+        if ids is None or check.get_active() == (pkg_id in ids):
+            return
+        if check.get_active():
+            ids.append(pkg_id)
+        else:
+            ids.remove(pkg_id)
+        self._set_lists(lists)
+
+    def _on_new_list(self, entry):
+        name = entry.get_text().strip()
+        lists = self._lists()
+        if not name:
+            return
+        if name in lists:
+            self.toast(f'Já existe uma lista chamada "{name}".')
+            return
+        lists[name] = []
+        entry.set_text('')
+        self._set_lists(lists)
+        self._list_rows[name][0].set_expanded(True)
+
+    def _delete_list(self, name):
+        lists = self._lists()
+        lists.pop(name, None)
+        if self.settings.get_string('playlist-active') == name:
+            self.settings.set_string('playlist-active', '')
+        self._set_lists(lists)
+
     def _build_settings(self):
         page = Adw.PreferencesPage()
         page.add(self._build_speed())
@@ -367,6 +511,7 @@ class GalleryWindow(Adw.ApplicationWindow):
             for pkg in pkgs:
                 self.flow.append(Card(pkg, pkg['id'] == self._current))
             GLib.idle_add(lambda: scroll.set_value(position) and False)
+            self._sync_lists()
         self.pages.set_visible_child_name('grid' if pkgs else 'empty')
 
     # --- ações ---

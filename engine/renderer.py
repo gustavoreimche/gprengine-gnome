@@ -7,6 +7,7 @@ que chama SetPaused por D-Bus.
 import json
 import os
 import sys
+import random
 import time
 
 import cairo
@@ -256,6 +257,7 @@ class Engine(Gtk.Application):
         self._elapsed = 0.0
         self._resumed_at = time.monotonic()
         self._speed = 1.0
+        self._rotation = 0
         self._validated = False
         self._registration = 0
         self._fps_window = (time.monotonic(), 0, 0.0)
@@ -280,6 +282,9 @@ class Engine(Gtk.Application):
         self.settings.connect('changed::fps-limit', self._on_draw_setting)
         self.settings.connect('changed::speed', self._on_speed_setting)
         self._speed = self.settings.get_double('speed')
+        self.settings.connect('changed::playlist-active', self._on_playlist_setting)
+        self.settings.connect('changed::playlist-interval', self._restart_rotation)
+        self._restart_rotation()
         self.packages = packages.discover()
         self.current = self.settings.get_string('current')
 
@@ -403,11 +408,20 @@ class Engine(Gtk.Application):
         else:
             self.set_current(pkg_id)
 
+    def playlist(self):
+        """Ids utilizáveis da lista em uso; vazio se não há lista ativa."""
+        name = self.settings.get_string('playlist-active')
+        if not name:
+            return []
+        ids = self.settings.get_value('playlists').unpack().get(name, [])
+        usable = {p.id for p in self.usable()}
+        return [i for i in ids if i in usable]
+
     def step(self, offset):
-        usable = self.usable()
-        if not usable:
+        # Com uma lista ativa, anterior/próximo andam dentro dela.
+        ids = self.playlist() or [p.id for p in self.usable()]
+        if not ids:
             return
-        ids = [p.id for p in usable]
         index = ids.index(self.current) if self.current in ids else -offset
         self.set_current(ids[(index + offset) % len(ids)])
 
@@ -479,6 +493,31 @@ class Engine(Gtk.Application):
         except ValueError as e:
             print(f'gprengine: {e}', file=sys.stderr)
 
+    def _restart_rotation(self, *_):
+        if self._rotation:
+            GLib.source_remove(self._rotation)
+            self._rotation = 0
+        if self.settings.get_string('playlist-active'):
+            self._rotation = GLib.timeout_add_seconds(
+                self.settings.get_int('playlist-interval'), self._rotate)
+
+    def _on_playlist_setting(self, *_):
+        self._restart_rotation()
+        ids = self.playlist()
+        if ids and self.current not in ids:
+            self.set_current(ids[0])
+
+    def _rotate(self):
+        ids = self.playlist()
+        others = [i for i in ids if i != self.current]
+        if not others:
+            return True
+        if self.settings.get_boolean('playlist-shuffle'):
+            self.set_current(random.choice(others))
+        else:
+            self.step(1)
+        return True
+
     def _on_speed_setting(self, settings, _key):
         # Fecha a conta do tempo já decorrido na velocidade antiga: a animação
         # segue de onde está, sem saltar.
@@ -527,6 +566,7 @@ class Engine(Gtk.Application):
             'current': self.current,
             'render_scale': self.render_scale,
             'speed': self._speed,
+            'playlist': self.settings.get_string('playlist-active'),
             'gl_renderer': self.gl_renderer,
             'gl_version': self.gl_version,
             'windows': [{'title': w.get_title(), 'size': w.size,

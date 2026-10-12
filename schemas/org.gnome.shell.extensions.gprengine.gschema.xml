@@ -30,6 +30,23 @@
       <default>1.0</default>
       <summary>Velocidade da animação (1.0 é a do autor do wallpaper)</summary>
     </key>
+    <key name="playlists" type="a{sas}">
+      <default>{}</default>
+      <summary>Listas pessoais: nome da lista e os ids dos wallpapers</summary>
+    </key>
+    <key name="playlist-active" type="s">
+      <default>''</default>
+      <summary>Lista que troca sozinha (vazio desliga a troca)</summary>
+    </key>
+    <key name="playlist-interval" type="i">
+      <range min="5" max="86400"/>
+      <default>600</default>
+      <summary>Segundos entre uma troca e outra</summary>
+    </key>
+    <key name="playlist-shuffle" type="b">
+      <default>false</default>
+      <summary>Sortear o próximo wallpaper da lista</summary>
+    </key>
     <key name="pause-when-covered" type="b">
       <default>true</default>
       <summary>Pausar quando as janelas cobrem a área de trabalho</summary>
