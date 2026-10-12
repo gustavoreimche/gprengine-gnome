@@ -37,7 +37,6 @@ PACK_ALIGNMENT = 0x0D05
 BLEND = 0x0BE2
 DEPTH_TEST = 0x0B71
 SCISSOR_TEST = 0x0C11
-VIEWPORT = 0x0BA2
 
 _SIGNATURES = {
     'glCreateShader': (c_uint, [c_uint]),
@@ -256,13 +255,6 @@ def bound_draw_framebuffer():
     value = c_int(0)
     glGetIntegerv(DRAW_FRAMEBUFFER_BINDING, byref(value))
     return value.value
-
-
-def viewport_size():
-    """Tamanho real do framebuffer do GtkGLArea, já com a escala HiDPI."""
-    box = (c_int * 4)()
-    glGetIntegerv(VIEWPORT, box)
-    return box[2], box[3]
 
 
 def read_rgba(width, height):

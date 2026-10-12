@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "ondas",
+  "name": "Ondas",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}

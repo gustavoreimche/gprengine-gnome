@@ -94,7 +94,7 @@ class WallpaperWindow(Gtk.Window):
         self.area.connect('realize', self._on_realize)
         self.area.connect('unrealize', self._on_unrealize)
         self.area.connect('render', self._on_render)
-        self.area.connect('resize', lambda *_: self.area.queue_render())
+        self.area.connect('resize', self._on_resize)
         self.set_child(self.area)
 
     def _on_window_realize(self, _window):
@@ -130,6 +130,11 @@ class WallpaperWindow(Gtk.Window):
         if self._vao.value:
             gl.glDeleteVertexArrays(1, gl.byref(self._vao))
             self._vao = gl.c_uint(0)
+
+    def _on_resize(self, area, width, height):
+        # Tamanho do framebuffer em pixels, já com a escala HiDPI.
+        self.size = (width, height)
+        area.queue_render()
 
     def make_current(self):
         if not self.area.get_realized():
@@ -180,8 +185,10 @@ class WallpaperWindow(Gtk.Window):
                 self.engine.report_error(pkg, str(e))
 
     def _on_render(self, area, _context):
-        width, height = gl.viewport_size()
-        self.size = (width, height)
+        width, height = self.size
+        # O GTK só ajusta o viewport ao redimensionar, e as miniaturas mexem
+        # nele no mesmo contexto.
+        gl.glViewport(0, 0, width, height)
         self._sync_program()
         if not self._program or width <= 0 or height <= 0:
             gl.glClearColor(0.0, 0.0, 0.0, 1.0)

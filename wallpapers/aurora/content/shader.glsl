@@ -41,10 +41,15 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
         col += tint * curtain * rays * (0.55 - fi * 0.12);
     }
 
-    vec2 cell = floor(fragCoord / 3.0);
-    float star = step(0.9975, hash(cell));
-    float twinkle = 0.6 + 0.4 * sin(iTime * 1.5 + hash(cell + 1.0) * 6.283);
-    col += vec3(star * twinkle * smoothstep(0.25, 0.9, uv.y) * 0.8);
+    // Estrelas numa grade em unidades de tela, não em pixels: a mesma
+    // quantidade em qualquer resolução.
+    vec2 sp = vec2(uv.x * aspect, uv.y) * 80.0;
+    vec2 cell = floor(sp);
+    float seed = hash(cell);
+    vec2 center = cell + 0.5 + (vec2(hash(cell + 3.1), hash(cell + 7.7)) - 0.5) * 0.7;
+    float star = step(0.965, seed) * smoothstep(0.15, 0.0, length(sp - center));
+    float twinkle = 0.6 + 0.4 * sin(iTime * 1.5 + seed * 6.283);
+    col += vec3(star * twinkle * smoothstep(0.25, 0.9, uv.y));
 
     fragColor = vec4(col, 1.0);
 }
