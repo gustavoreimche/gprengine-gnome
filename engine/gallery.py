@@ -237,10 +237,11 @@ class GalleryWindow(Adw.ApplicationWindow):
             'Abaixo de 100 % o shader desenha menos pixels e a imagem é '
             'ampliada', 'render-scale', SCALES))
         performance.add(self._combo('Limite de quadros', '', 'fps-limit', FPS))
-        performance.add(self._combo(
+        self.gpu_row = self._combo(
             'Placa de vídeo',
             'A integrada gasta menos; trocar reinicia o wallpaper', 'gpu',
-            GPUS))
+            GPUS)
+        performance.add(self.gpu_row)
         page.add(performance)
         return page
 
@@ -288,6 +289,10 @@ class GalleryWindow(Adw.ApplicationWindow):
     def _on_stats(self, value):
         stats = json.loads(value.unpack()[0])
         self._current = stats['current']
+        if stats['gl_renderer']:
+            # O que o driver diz, não o que foi pedido: se a dedicada não
+            # subir, a extensão volta sozinha para a integrada.
+            self.gpu_row.set_subtitle(f'Em uso: {stats["gl_renderer"]}')
         manual = 'manual' in stats['reasons']
         if self.pause.get_active() != manual:
             self.pause.handler_block(self._pause_handler)

@@ -240,8 +240,11 @@ class WallpaperWindow(Gtk.Window):
 
 class Engine(Gtk.Application):
     def __init__(self):
+        # Um renderer novo toma o lugar do antigo em vez de se dar por
+        # duplicado: ao religar a extensão o antigo ainda pode estar saindo.
         super().__init__(application_id=APP_ID,
-                         flags=Gio.ApplicationFlags.DEFAULT_FLAGS)
+                         flags=Gio.ApplicationFlags.ALLOW_REPLACEMENT |
+                         Gio.ApplicationFlags.REPLACE)
         self.packages = []
         self.current = ''
         self.reasons = set()
