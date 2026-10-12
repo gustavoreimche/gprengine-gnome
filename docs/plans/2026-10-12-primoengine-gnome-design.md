@@ -152,3 +152,24 @@ Num GNOME Shell headless isolado:
 - Pacote `web` listado como não suportado, sem quebrar a grade.
 - Cinco ciclos de ativar e desativar sem erro no log nem janela sobrando.
 - Os seis embutidos compilam e mantêm 30 FPS na Intel a 75 %.
+
+## O que mudou na implementação
+
+- **Tamanho da janela.** O Mutter limita uma janela comum à área útil, e tela
+  cheia esconderia o painel. A janela do renderer fica do maior tamanho que
+  cabe na área útil com a proporção do monitor; o clone no fundo a amplia até
+  a tela inteira.
+- **Janela real invisível.** O que aparece é um `Clutter.Clone` dentro de cada
+  `Meta.BackgroundActor`. A janela fica com opacidade zero, região de entrada
+  vazia e um efeito vazio que a tira do recorte de oclusão do Mutter (sem ele
+  o clone ganha um buraco atrás de cada janela aberta).
+- **Tela bloqueada.** A extensão é desligada no bloqueio, então o renderer é
+  encerrado e volta ao desbloquear.
+- **Tile do dock.** O clique abre um painel com pausar, próximo, anterior e
+  galeria. Rolagem e clique direito ficaram com o dock, que já os usa para
+  trocar de perfil e abrir o menu.
+- **`Mtk.Region` não é usável do GJS** (derruba o shell). A área coberta é
+  calculada em JS.
+- **Testes** foram feitos à mão com `tests/headless.sh`; não há suíte
+  automatizada. Não verificados: convivência com o DING (ele não sobe na
+  sessão isolada), GPU dedicada e desempenho em 4096x2560.
