@@ -54,6 +54,9 @@ start)
     setsid dbus-run-session -- bash -c '
         echo "$DBUS_SESSION_BUS_ADDRESS" > "$0/bus"
         echo $$ > "$0/shell.pid"
+        # PipeWire próprio, para tests/screencast.py.
+        pipewire & wireplumber &
+        sleep 1
         gsettings set org.gnome.shell disable-user-extensions false
         gsettings set org.gnome.shell enabled-extensions "$2"
         gsettings set org.gnome.shell welcome-dialog-last-shown-version 999

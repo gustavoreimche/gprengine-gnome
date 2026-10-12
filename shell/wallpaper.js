@@ -15,12 +15,24 @@ import {RoundedClipEffect} from './roundedClip.js';
 const TITLE_PREFIX = 'primoengine:';
 const FADE_MS = 400;
 
+// Clone que nunca é descartado pelo recorte de repintura. O volume de pintura
+// de um Clutter.Clone é o da origem, sem a ampliação; com ele o compositor
+// pode concluir que o clone está fora da área a repintar e não desenhá-lo no
+// monitor, embora ele apareça em capturas de tela (que repintam tudo).
+const WholeClone = GObject.registerClass(
+class PrimoEngineWholeClone extends Clutter.Clone {
+    vfunc_get_paint_volume(_volume) {
+        return false;
+    }
+});
+
 // Camada viva dentro de um Meta.BackgroundActor: um clone da janela do
 // renderer. Cada fundo que o shell cria (área de trabalho, miniaturas da visão
 // geral, troca de workspace) ganha a sua.
 const LiveLayer = GObject.registerClass(
 class LiveLayer extends Clutter.Actor {
-    _init(backgroundActor) {
+    _init(backgroundActor, settings) {
+        this._settings = settings;
         // clip_to_allocation: sem ele o volume de pintura seria o da janela
         // de origem do clone, não o nosso, e o recorte arredondado erraria a
         // conta.
@@ -30,7 +42,7 @@ class LiveLayer extends Clutter.Actor {
             source: backgroundActor,
             coordinate: Clutter.BindCoordinate.SIZE,
         }));
-        this._clone = new Clutter.Clone();
+        this._clone = new WholeClone();
         this._clone.add_constraint(new Clutter.BindConstraint({
             source: this,
             coordinate: Clutter.BindCoordinate.SIZE,
@@ -45,16 +57,28 @@ class LiveLayer extends Clutter.Actor {
         this.add_effect(this._clip);
         this._content.connectObject(
             'notify::rounded-clip-radius', () => this._syncClip(), this);
+        this._settings.connectObject(
+            'changed::force-offscreen', () => this._syncClip(), this);
         this.connect('notify::size', () => this._syncClip());
-        this.connect('destroy', () => this._content.disconnectObject(this));
+        this.connect('destroy', () => {
+            this._content.disconnectObject(this);
+            this._settings.disconnectObject(this);
+        });
         this._syncClip();
     }
 
     _syncClip() {
         const radius = this._content.rounded_clip_radius;
-        this._clip.enabled = radius > 0;
-        if (radius <= 0)
+        const forced = this._settings.get_boolean('force-offscreen');
+        this._clip.enabled = radius > 0 || forced;
+        if (!this._clip.enabled)
             return;
+        if (radius <= 0) {
+            // Sem recorte: o efeito só está ligado para desenhar via textura.
+            this._clip.setClip(this.width, this.height,
+                [0, 0, this.width, this.height], 0);
+            return;
+        }
         // Mesmos limites que o shell dá ao fundo estático: a área útil, em
         // coordenadas do monitor, levada para o tamanho com que o fundo foi
         // alocado na visão geral.
@@ -68,6 +92,12 @@ class LiveLayer extends Clutter.Actor {
         const y = (area.y - monitor.y) * sy;
         this._clip.setClip(this.width, this.height,
             [x, y, x + area.width * sx, y + area.height * sy], radius);
+    }
+
+    // A origem ganhou um quadro novo: repinta, sem depender de o Clutter
+    // repassar o dano de uma janela invisível aos clones dela.
+    redraw() {
+        this._clone.queue_redraw();
     }
 
     setSource(windowActor) {
@@ -97,8 +127,9 @@ class PrimoEngineKeepWholeEffect extends Clutter.Effect {});
 // Põe as janelas do renderer na camada de fundo e as esconde de tudo que
 // lista janelas (Alt+Tab, visão geral, docks).
 export class WallpaperManager {
-    constructor(process) {
+    constructor(process, settings) {
         this._process = process;
+        this._settings = settings;
         this._windows = new Map();
         this._layers = new Set();
         this._refuseId = 0;
@@ -164,6 +195,12 @@ export class WallpaperManager {
             'notify::opacity', () => {
                 if (actor.opacity !== 0)
                     actor.opacity = 0;
+            },
+            'damaged', () => {
+                for (const layer of this._layers) {
+                    if (layer.mapped)
+                        layer.redraw();
+                }
             }, this);
         this._place(window);
     }
@@ -251,7 +288,7 @@ export class WallpaperManager {
     }
 
     _addLayer(backgroundActor) {
-        const layer = new LiveLayer(backgroundActor);
+        const layer = new LiveLayer(backgroundActor, this._settings);
         this._layers.add(layer);
         layer.connect('destroy', () => this._layers.delete(layer));
         layer.setSource(this._sourceFor(layer.monitorIndex));

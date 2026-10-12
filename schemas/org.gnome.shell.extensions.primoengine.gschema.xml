@@ -29,6 +29,10 @@
       <default>true</default>
       <summary>Pausar quando as janelas cobrem a área de trabalho</summary>
     </key>
+    <key name="force-offscreen" type="b">
+      <default>false</default>
+      <summary>Desenhar o fundo via textura intermediária (compatibilidade)</summary>
+    </key>
     <key name="battery-mode"
          enum="org.gnome.shell.extensions.primoengine.BatteryMode">
       <default>'limit'</default>
