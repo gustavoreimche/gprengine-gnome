@@ -47,6 +47,7 @@ class Card(Gtk.FlowBoxChild):
     def __init__(self, pkg, current):
         super().__init__()
         self.pkg = pkg
+        self._check = None
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         box.add_css_class('wallpaper-card')
 
@@ -64,9 +65,10 @@ class Card(Gtk.FlowBoxChild):
             badge = Gtk.Label(label='Em breve')
             badge.add_css_class('soon')
             self.set_tooltip_text(f'Wallpapers do tipo "{pkg["type"]}" ainda não são suportados.')
-        elif current:
+        else:
             badge = Gtk.Image(icon_name='object-select-symbolic')
             badge.add_css_class('accent')
+            self._check = badge
         if badge:
             badge.set_halign(Gtk.Align.END)
             badge.set_valign(Gtk.Align.START)
@@ -84,13 +86,21 @@ class Card(Gtk.FlowBoxChild):
             author.add_css_class('caption')
             box.append(author)
 
-        if current:
-            box.add_css_class('current')
+        self._box = box
+        self.set_current(current)
         if pkg['error'] or pkg['unsupported']:
             box.add_css_class('unavailable')
         self.set_halign(Gtk.Align.CENTER)
         self.set_valign(Gtk.Align.START)
         self.set_child(box)
+
+    def set_current(self, current):
+        if self._check:
+            self._check.set_visible(current)
+        if current and self._check:
+            self._box.add_css_class('current')
+        else:
+            self._box.remove_css_class('current')
 
     def _thumbnail(self, path):
         # Carrega já no tamanho do cartão (em pixels físicos): o tamanho
@@ -118,6 +128,7 @@ class GalleryWindow(Adw.ApplicationWindow):
         self.settings = load_settings()
         self.proxy = None
         self._current = ''
+        self._pkgs = None
 
         self.stack = Adw.ViewStack()
         self.stack.add_titled_with_icon(
@@ -165,8 +176,8 @@ class GalleryWindow(Adw.ApplicationWindow):
             valign=Gtk.Align.START, margin_top=18, margin_bottom=18,
             margin_start=18, margin_end=18, activate_on_single_click=True)
         self.flow.connect('child-activated', self._on_card)
-        scrolled = Gtk.ScrolledWindow(child=self.flow,
-                                      hscrollbar_policy=Gtk.PolicyType.NEVER)
+        scrolled = self.scrolled = Gtk.ScrolledWindow(
+            child=self.flow, hscrollbar_policy=Gtk.PolicyType.NEVER)
 
         self.offline = Adw.StatusPage(
             icon_name='preferences-desktop-wallpaper-symbolic',
@@ -341,9 +352,21 @@ class GalleryWindow(Adw.ApplicationWindow):
 
     def _on_list(self, value):
         pkgs = json.loads(value.unpack()[0])
-        self.flow.remove_all()
-        for pkg in pkgs:
-            self.flow.append(Card(pkg, pkg['id'] == self._current))
+        if pkgs == self._pkgs:
+            # Só o wallpaper em uso mudou: marcar no lugar, sem refazer a
+            # grade, para a rolagem não voltar ao topo.
+            index = 0
+            while (card := self.flow.get_child_at_index(index)) is not None:
+                card.set_current(card.pkg['id'] == self._current)
+                index += 1
+        else:
+            scroll = self.scrolled.get_vadjustment()
+            position = scroll.get_value()
+            self._pkgs = pkgs
+            self.flow.remove_all()
+            for pkg in pkgs:
+                self.flow.append(Card(pkg, pkg['id'] == self._current))
+            GLib.idle_add(lambda: scroll.set_value(position) and False)
         self.pages.set_visible_child_name('grid' if pkgs else 'empty')
 
     # --- ações ---
