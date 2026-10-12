@@ -9,6 +9,7 @@ import os
 import sys
 import time
 
+import cairo
 import gi
 
 gi.require_version('Gdk', '4.0')
@@ -79,9 +80,13 @@ class WallpaperWindow(Gtk.Window):
         self.size = (0, 0)
         self.target_size = (0, 0)
 
-        geometry = monitor.get_geometry()
-        self.set_default_size(geometry.width, geometry.height)
+        # Pequena de propósito: perto do tamanho da tela o Mutter a
+        # maximizaria. Quem dá o tamanho final é a extensão.
+        self.set_default_size(640, 400)
         self.set_focusable(False)
+        # Alt+F4 ou "fechar" do shell não derrubam o wallpaper.
+        self.connect('close-request', lambda *_: True)
+        self.connect('realize', self._on_window_realize)
 
         self.area = Gtk.GLArea(auto_render=False, focusable=False)
         self.area.set_allowed_apis(Gdk.GLAPI.GL)
@@ -91,6 +96,16 @@ class WallpaperWindow(Gtk.Window):
         self.area.connect('render', self._on_render)
         self.area.connect('resize', lambda *_: self.area.queue_render())
         self.set_child(self.area)
+
+    def _on_window_realize(self, _window):
+        surface = self.get_surface()
+        surface.connect('layout', lambda *_: self._pass_input_through())
+        self._pass_input_through()
+
+    def _pass_input_through(self):
+        # Região de entrada vazia: cliques atravessam e chegam à área de
+        # trabalho, como se a janela não existisse.
+        self.get_surface().set_input_region(cairo.Region())
 
     # --- contexto GL ---
 

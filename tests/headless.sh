@@ -6,6 +6,7 @@
 #   tests/headless.sh run <comando...>     roda algo dentro da sessão de teste
 #   tests/headless.sh eval '<js>'          avalia JS dentro do shell
 #   tests/headless.sh shot <arquivo.png>
+#   tests/headless.sh alive               sai com 0 se o shell está de pé
 #   tests/headless.sh stop
 set -euo pipefail
 
@@ -42,9 +43,13 @@ start)
     unset DBUS_SESSION_BUS_ADDRESS
     setsid dbus-run-session -- bash -c '
         echo "$DBUS_SESSION_BUS_ADDRESS" > "$0/bus"
+        echo $$ > "$0/shell.pid"
+        gsettings set org.gnome.shell disable-user-extensions false
+        gsettings set org.gnome.shell enabled-extensions "$2"
+        gsettings set org.gnome.shell welcome-dialog-last-shown-version 999
         exec gnome-shell --headless --wayland --no-x11 --unsafe-mode \
             --virtual-monitor "$1" --wayland-display "$WAYLAND_DISPLAY"
-    ' "$ROOT" "$size" > "$ROOT/shell.log" 2>&1 &
+    ' "$ROOT" "$size" "['$UUID']" > "$ROOT/shell.log" 2>&1 &
     echo $! > "$ROOT/pid"
     for _ in $(seq 50); do
         [ -S "$ROOT/rt/primo-test" ] && [ -s "$ROOT/bus" ] && { echo "pronto"; exit 0; }
@@ -68,6 +73,9 @@ shot)
     gdbus call --session --dest org.gnome.Shell.Screenshot \
         --object-path /org/gnome/Shell/Screenshot \
         --method org.gnome.Shell.Screenshot.Screenshot false false "$(realpath -m "$2")"
+    ;;
+alive)
+    kill -0 "$(cat "$ROOT/shell.pid" 2>/dev/null)" 2>/dev/null
     ;;
 stop)
     if [ -f "$ROOT/pid" ]; then
