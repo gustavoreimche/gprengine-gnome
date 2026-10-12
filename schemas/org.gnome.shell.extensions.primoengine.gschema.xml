@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <enum id="org.gnome.shell.extensions.primoengine.BatteryMode">
+    <value nick="continue" value="0"/>
+    <value nick="limit" value="1"/>
+    <value nick="pause" value="2"/>
+  </enum>
+  <enum id="org.gnome.shell.extensions.primoengine.Gpu">
+    <value nick="integrated" value="0"/>
+    <value nick="discrete" value="1"/>
+  </enum>
+  <schema id="org.gnome.shell.extensions.primoengine"
+          path="/org/gnome/shell/extensions/primoengine/">
+    <key name="current" type="s">
+      <default>'aurora'</default>
+      <summary>Id do wallpaper atual</summary>
+    </key>
+    <key name="render-scale" type="i">
+      <range min="25" max="100"/>
+      <default>75</default>
+      <summary>Escala de renderização, em % da resolução da tela</summary>
+    </key>
+    <key name="fps-limit" type="i">
+      <range min="5" max="240"/>
+      <default>30</default>
+      <summary>Limite de quadros por segundo</summary>
+    </key>
+    <key name="pause-when-covered" type="b">
+      <default>true</default>
+      <summary>Pausar quando as janelas cobrem a área de trabalho</summary>
+    </key>
+    <key name="battery-mode"
+         enum="org.gnome.shell.extensions.primoengine.BatteryMode">
+      <default>'limit'</default>
+      <summary>Na bateria: continuar, limitar a 15 FPS ou pausar</summary>
+    </key>
+    <key name="gpu" enum="org.gnome.shell.extensions.primoengine.Gpu">
+      <default>'integrated'</default>
+      <summary>GPU usada pelo renderer</summary>
+    </key>
+  </schema>
+</schemalist>

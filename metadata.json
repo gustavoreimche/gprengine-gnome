@@ -1,0 +1,8 @@
+{
+  "uuid": "primoengine@gpr",
+  "name": "PrimoEngine GNOME",
+  "description": "Wallpapers vivos: shaders desenhados na GPU que param quando ninguém está olhando. Inspirado no PrimoEngine.",
+  "shell-version": ["50"],
+  "settings-schema": "org.gnome.shell.extensions.primoengine",
+  "version": 1
+}

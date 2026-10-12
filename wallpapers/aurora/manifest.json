@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "aurora",
+  "name": "Aurora",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}
