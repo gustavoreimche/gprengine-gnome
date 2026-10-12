@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "cruz-de-luz",
+  "name": "Cruz de Luz",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}
