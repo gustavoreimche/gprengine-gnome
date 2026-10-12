@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "tunel",
+  "name": "Túnel",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}

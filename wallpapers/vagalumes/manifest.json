@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "vagalumes",
+  "name": "Vagalumes",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}

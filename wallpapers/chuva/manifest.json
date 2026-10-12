@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "chuva",
+  "name": "Chuva",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}

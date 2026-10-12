@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "galaxia",
+  "name": "Galáxia",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}
