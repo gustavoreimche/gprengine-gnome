@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "galileia-noite",
+  "name": "Galileia à noite",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}

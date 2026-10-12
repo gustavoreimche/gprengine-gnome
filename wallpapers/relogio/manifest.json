@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "relogio",
+  "name": "Relógio minimal",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}

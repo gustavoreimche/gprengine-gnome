@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "relogio-ondas",
+  "name": "Relógio nas ondas",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}

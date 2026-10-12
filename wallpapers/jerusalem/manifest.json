@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "jerusalem",
+  "name": "Jerusalém",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}
