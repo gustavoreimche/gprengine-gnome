@@ -18,11 +18,11 @@ def _xdg(var, default):
 
 
 USER_DIR = os.path.join(_xdg('XDG_CONFIG_HOME', '~/.config'),
-                        'primoengine', 'wallpapers')
+                        'gprengine', 'wallpapers')
 BUILTIN_DIR = os.path.join(_xdg('XDG_DATA_HOME', '~/.local/share'),
-                           'primoengine', 'wallpapers')
+                           'gprengine', 'wallpapers')
 THUMB_DIR = os.path.join(_xdg('XDG_CACHE_HOME', '~/.cache'),
-                         'primoengine', 'thumbs')
+                         'gprengine', 'thumbs')
 
 
 @dataclass

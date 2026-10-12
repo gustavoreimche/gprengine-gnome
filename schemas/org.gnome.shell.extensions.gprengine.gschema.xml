@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
-  <enum id="org.gnome.shell.extensions.primoengine.BatteryMode">
+  <enum id="org.gnome.shell.extensions.gprengine.BatteryMode">
     <value nick="continue" value="0"/>
     <value nick="limit" value="1"/>
     <value nick="pause" value="2"/>
   </enum>
-  <enum id="org.gnome.shell.extensions.primoengine.Gpu">
+  <enum id="org.gnome.shell.extensions.gprengine.Gpu">
     <value nick="integrated" value="0"/>
     <value nick="discrete" value="1"/>
   </enum>
-  <schema id="org.gnome.shell.extensions.primoengine"
-          path="/org/gnome/shell/extensions/primoengine/">
+  <schema id="org.gnome.shell.extensions.gprengine"
+          path="/org/gnome/shell/extensions/gprengine/">
     <key name="current" type="s">
       <default>'aurora'</default>
       <summary>Id do wallpaper atual</summary>
@@ -34,11 +34,11 @@
       <summary>Desenhar o fundo via textura intermediária (compatibilidade)</summary>
     </key>
     <key name="battery-mode"
-         enum="org.gnome.shell.extensions.primoengine.BatteryMode">
+         enum="org.gnome.shell.extensions.gprengine.BatteryMode">
       <default>'limit'</default>
       <summary>Na bateria: continuar, limitar a 15 FPS ou pausar</summary>
     </key>
-    <key name="gpu" enum="org.gnome.shell.extensions.primoengine.Gpu">
+    <key name="gpu" enum="org.gnome.shell.extensions.gprengine.Gpu">
       <default>'integrated'</default>
       <summary>GPU usada pelo renderer</summary>
     </key>

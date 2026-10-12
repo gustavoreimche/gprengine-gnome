@@ -1,4 +1,4 @@
-# PrimoEngine GNOME: desenho
+# GprEngine GNOME: desenho
 
 Data: 2026-10-12
 
@@ -32,7 +32,7 @@ quando ninguém está olhando. Projeto irmão do `primodock-gnome`.
 | Peça | Tecnologia | Papel |
 |---|---|---|
 | Renderer | Python, GTK4, `GtkGLArea` | Uma janela por monitor. Carrega o pacote, compila o GLSL, desenha. Dono do nome D-Bus e do estado. |
-| Extensão `primoengine@gpr` | GNOME Shell 50 | Sobe o renderer, põe a janela na camada de fundo, esconde do Alt+Tab e do overview, decide quando pausar. |
+| Extensão `gprengine@gpr` | GNOME Shell 50 | Sobe o renderer, põe a janela na camada de fundo, esconde do Alt+Tab e do overview, decide quando pausar. |
 | Galeria | Python, GTK4, libadwaita | Grade de miniaturas, aplicar, ajustes. |
 | Tile do dock | `primodock-gnome/widgets/engine.js` | Pausar, próximo, anterior, abrir a galeria. |
 
@@ -44,7 +44,7 @@ religar com intervalo crescente, no máximo três vezes.
 
 ### D-Bus
 
-Nome `dev.gpr.PrimoEngine`, objeto `/dev/gpr/PrimoEngine`, no barramento de
+Nome `dev.gpr.GprEngine`, objeto `/dev/gpr/GprEngine`, no barramento de
 sessão.
 
 | Membro | Tipo | Descrição |
@@ -79,8 +79,8 @@ aurora/
 }
 ```
 
-Embutidos em `~/.local/share/primoengine/wallpapers/`, os do usuário em
-`~/.config/primoengine/wallpapers/`. Com o mesmo `id`, vale o do usuário.
+Embutidos em `~/.local/share/gprengine/wallpapers/`, os do usuário em
+`~/.config/gprengine/wallpapers/`. Com o mesmo `id`, vale o do usuário.
 
 Tipos `web` e `video` são listados como "ainda não suportado", sem erro de
 formato.
@@ -136,7 +136,7 @@ Todos os monitores mostram o mesmo wallpaper na v1.
 
 ## Configuração
 
-GSettings em `org.gnome.shell.extensions.primoengine`. A galeria escreve; a
+GSettings em `org.gnome.shell.extensions.gprengine`. A galeria escreve; a
 extensão e o renderer reagem ao sinal de mudança.
 
 ## Testes

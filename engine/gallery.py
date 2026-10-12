@@ -113,7 +113,7 @@ class Card(Gtk.FlowBoxChild):
 
 class GalleryWindow(Adw.ApplicationWindow):
     def __init__(self, app):
-        super().__init__(application=app, title='PrimoEngine',
+        super().__init__(application=app, title='GprEngine',
                          default_width=920, default_height=640)
         self.settings = load_settings()
         self.proxy = None
@@ -170,8 +170,8 @@ class GalleryWindow(Adw.ApplicationWindow):
 
         self.offline = Adw.StatusPage(
             icon_name='preferences-desktop-wallpaper-symbolic',
-            title='O PrimoEngine não está rodando',
-            description='Ative a extensão PrimoEngine GNOME e entre de novo '
+            title='O GprEngine não está rodando',
+            description='Ative a extensão GprEngine GNOME e entre de novo '
                         'na sessão.')
         self.empty = Adw.StatusPage(
             icon_name='folder-symbolic', title='Nenhum wallpaper',

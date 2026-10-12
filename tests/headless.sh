@@ -11,8 +11,8 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ROOT="${PRIMOENGINE_TEST_ROOT:-$REPO/.dev/headless}"
-UUID="primoengine@gpr"
+ROOT="${GPRENGINE_TEST_ROOT:-$REPO/.dev/headless}"
+UUID="gprengine@gpr"
 
 session_env() {
     export XDG_RUNTIME_DIR="$ROOT/rt"
@@ -35,19 +35,19 @@ start)
         echo "já está rodando" >&2; exit 1; }
     rm -rf "$ROOT"
     mkdir -p "$ROOT/rt" "$ROOT/config" "$ROOT/cache" \
-             "$ROOT/data/gnome-shell/extensions" "$ROOT/data/primoengine"
+             "$ROOT/data/gnome-shell/extensions" "$ROOT/data/gprengine"
     chmod 700 "$ROOT/rt"
     ln -s "$REPO" "$ROOT/data/gnome-shell/extensions/$UUID"
-    ln -s "$REPO/wallpapers" "$ROOT/data/primoengine/wallpapers"
+    ln -s "$REPO/wallpapers" "$ROOT/data/gprengine/wallpapers"
     mkdir -p "$ROOT/data/applications"
-    sed "s#@REPO@#$REPO#" "$REPO/data/dev.gpr.PrimoEngine.Gallery.desktop.in" \
-        > "$ROOT/data/applications/dev.gpr.PrimoEngine.Gallery.desktop"
+    sed "s#@REPO@#$REPO#" "$REPO/data/dev.gpr.GprEngine.Gallery.desktop.in" \
+        > "$ROOT/data/applications/dev.gpr.GprEngine.Gallery.desktop"
     enabled="['$UUID']"
-    # PRIMODOCK=<pasta do primodock-gnome>: carrega o dock junto, com o tile
-    # do PrimoEngine, para testar a integração.
-    if [ -n "${PRIMODOCK:-}" ]; then
-        ln -s "$PRIMODOCK" "$ROOT/data/gnome-shell/extensions/primodock@gpr"
-        enabled="['$UUID', 'primodock@gpr']"
+    # GPRDOCK=<pasta do gprdock>: carrega o dock junto, com o tile
+    # do GprEngine, para testar a integração.
+    if [ -n "${GPRDOCK:-}" ]; then
+        ln -s "$GPRDOCK" "$ROOT/data/gnome-shell/extensions/gprdock@gpr"
+        enabled="['$UUID', 'gprdock@gpr']"
     fi
     session_env
     unset DBUS_SESSION_BUS_ADDRESS
@@ -60,9 +60,9 @@ start)
         gsettings set org.gnome.shell disable-user-extensions false
         gsettings set org.gnome.shell enabled-extensions "$2"
         gsettings set org.gnome.shell welcome-dialog-last-shown-version 999
-        if [ -n "${PRIMODOCK:-}" ]; then
-            gsettings --schemadir "$PRIMODOCK/schemas" set \
-                org.gnome.shell.extensions.primodock widgets "[\"engine\", \"battery\"]"
+        if [ -n "${GPRDOCK:-}" ]; then
+            gsettings --schemadir "$GPRDOCK/schemas" set \
+                org.gnome.shell.extensions.gprdock widgets "[\"engine\", \"battery\"]"
         fi
         exec gnome-shell --headless --wayland --no-x11 --unsafe-mode \
             --virtual-monitor "$1" --wayland-display "$WAYLAND_DISPLAY"

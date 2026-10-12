@@ -1,9 +1,9 @@
-# PrimoEngine GNOME
+# GprEngine GNOME
 
 Wallpapers vivos para o GNOME Shell 50 (Wayland): shaders de fragmento
 desenhados na GPU, que param de desenhar quando ninguém está olhando.
 Inspirado no [PrimoEngine](https://engine.oprimo.dev/); irmão do
-`primodock-gnome`.
+`gprdock`.
 
 ## Instalar
 
@@ -19,15 +19,15 @@ GTK 4 e libadwaita, que o Ubuntu já traz.
 
 ## Usar
 
-- **Galeria**: app "PrimoEngine" no menu. Clique num cartão para aplicar; a
+- **Galeria**: app "GprEngine" no menu. Clique num cartão para aplicar; a
   aba Ajustes controla pausa, escala, FPS e placa de vídeo.
-- **Tile no PrimoDock**: adicione o widget "Wallpaper vivo" nas preferências
+- **Tile no gprdock**: adicione o widget "Wallpaper vivo" nas preferências
   do dock. O clique abre pausar, próximo, anterior e a galeria.
 - **Linha de comando**:
 
   ```bash
-  gdbus call --session --dest dev.gpr.PrimoEngine \
-      --object-path /dev/gpr/PrimoEngine --method dev.gpr.PrimoEngine.Next
+  gdbus call --session --dest dev.gpr.GprEngine \
+      --object-path /dev/gpr/GprEngine --method dev.gpr.GprEngine.Next
   ```
 
   Métodos: `Apply(id)`, `Next`, `Previous`, `SetPaused(bool, motivo)`,
@@ -48,7 +48,7 @@ rodar, porque ali o fundo aparece.
 
 ## Criar um wallpaper
 
-Uma pasta em `~/.config/primoengine/wallpapers/` (o botão **+** da galeria a
+Uma pasta em `~/.config/gprengine/wallpapers/` (o botão **+** da galeria a
 abre):
 
 ```
@@ -105,7 +105,7 @@ tests/headless.sh eval 'Main.overview.show()'
 tests/headless.sh stop
 ```
 
-Com `PRIMODOCK=~/primodock-gnome` o dock sobe junto, com o tile.
+Com `GPRDOCK=~/gprdock` o dock sobe junto, com o tile.
 
 ## Limites conhecidos
 

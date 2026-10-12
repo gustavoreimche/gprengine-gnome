@@ -1,4 +1,4 @@
-"""GSettings do PrimoEngine, lido do schema que acompanha a extensão."""
+"""GSettings do GprEngine, lido do schema que acompanha a extensão."""
 
 import os
 

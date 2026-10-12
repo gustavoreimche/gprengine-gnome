@@ -53,7 +53,7 @@ MAX_DELTA = 0.25
 class WallpaperWindow(Gtk.Window):
     def __init__(self, engine, monitor):
         super().__init__(application=engine, decorated=False,
-                         title=f'primoengine:{monitor.get_connector()}')
+                         title=f'gprengine:{monitor.get_connector()}')
         self.engine = engine
         self.monitor = monitor
         self.frames = 0
@@ -289,7 +289,7 @@ class Engine(Gtk.Application):
         pass
 
     def fail(self, message):
-        print(f'primoengine: {message}', file=sys.stderr)
+        print(f'gprengine: {message}', file=sys.stderr)
         self.quit()
 
     def _sync_monitors(self):
@@ -442,7 +442,7 @@ class Engine(Gtk.Application):
                     window.render_thumbnail(program, path)
                 pkg.thumbnail = path
         except (GLib.Error, OSError, RuntimeError) as e:
-            print(f'primoengine: miniatura de {pkg.id}: {e}', file=sys.stderr)
+            print(f'gprengine: miniatura de {pkg.id}: {e}', file=sys.stderr)
         finally:
             program.destroy()
 
@@ -474,7 +474,7 @@ class Engine(Gtk.Application):
         try:
             self.apply(wanted)
         except ValueError as e:
-            print(f'primoengine: {e}', file=sys.stderr)
+            print(f'gprengine: {e}', file=sys.stderr)
 
     def _on_draw_setting(self, *_):
         self.redraw()

@@ -12,7 +12,7 @@ import {InjectionManager} from 'resource:///org/gnome/shell/extensions/extension
 
 import {RoundedClipEffect} from './roundedClip.js';
 
-const TITLE_PREFIX = 'primoengine:';
+const TITLE_PREFIX = 'gprengine:';
 const FADE_MS = 400;
 
 // Clone que nunca é descartado pelo recorte de repintura. O volume de pintura
@@ -20,7 +20,7 @@ const FADE_MS = 400;
 // pode concluir que o clone está fora da área a repintar e não desenhá-lo no
 // monitor, embora ele apareça em capturas de tela (que repintam tudo).
 const WholeClone = GObject.registerClass(
-class PrimoEngineWholeClone extends Clutter.Clone {
+class GprEngineWholeClone extends Clutter.Clone {
     vfunc_get_paint_volume(_volume) {
         return false;
     }
@@ -122,7 +122,7 @@ class LiveLayer extends Clutter.Actor {
 // wallpaper atrás de cada janela aberta. Atores com efeito ficam fora dessa
 // otimização; este efeito não faz mais nada.
 const KeepWholeEffect = GObject.registerClass(
-class PrimoEngineKeepWholeEffect extends Clutter.Effect {});
+class GprEngineKeepWholeEffect extends Clutter.Effect {});
 
 // Põe as janelas do renderer na camada de fundo e as esconde de tudo que
 // lista janelas (Alt+Tab, visão geral, docks).
@@ -174,7 +174,7 @@ export class WallpaperManager {
 
         // O que aparece é o clone no fundo; a janela de verdade fica invisível.
         actor.opacity = 0;
-        actor.add_effect_with_name('primoengine-keep-whole', new KeepWholeEffect());
+        actor.add_effect_with_name('gprengine-keep-whole', new KeepWholeEffect());
         window.stick();
         window.lower();
 
@@ -355,7 +355,7 @@ export class WallpaperManager {
         for (const [window, entry] of this._windows) {
             window.disconnectObject(this);
             entry.actor.disconnectObject(this);
-            entry.actor.remove_effect_by_name('primoengine-keep-whole');
+            entry.actor.remove_effect_by_name('gprengine-keep-whole');
         }
         this._windows.clear();
         for (const layer of [...this._layers])

@@ -22,7 +22,7 @@ cogl_color_out *= 1.0 - smoothstep(-0.5, 0.5, d);
 // Recorta o ator num retângulo de cantos arredondados, como o
 // MetaBackgroundContent faz com o fundo estático na visão geral.
 export const RoundedClipEffect = GObject.registerClass(
-class PrimoEngineRoundedClipEffect extends Shell.GLSLEffect {
+class GprEngineRoundedClipEffect extends Shell.GLSLEffect {
     vfunc_build_pipeline() {
         this.add_glsl_snippet(
             Cogl.SnippetHook.FRAGMENT, DECLARATIONS, CODE, false);

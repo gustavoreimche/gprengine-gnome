@@ -4,7 +4,7 @@ import {PauseController} from './shell/pause.js';
 import {RendererProcess} from './shell/process.js';
 import {WallpaperManager} from './shell/wallpaper.js';
 
-export default class PrimoEngineExtension extends Extension {
+export default class GprEngineExtension extends Extension {
     enable() {
         this._settings = this.getSettings();
         this._process = new RendererProcess(this.path, this._settings);

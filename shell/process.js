@@ -13,7 +13,7 @@ const NVIDIA_EGL_VENDOR = '/usr/share/glvnd/egl_vendor.d/10_nvidia.json';
 export class RendererProcess {
     constructor(extensionPath, settings) {
         this._binary = GLib.build_filenamev(
-            [extensionPath, 'bin', 'primoengine-renderer']);
+            [extensionPath, 'bin', 'gprengine-renderer']);
         this._settings = settings;
         this._proc = null;
         this._restarts = 0;
@@ -58,7 +58,7 @@ export class RendererProcess {
         try {
             proc = launcher.spawnv([this._binary]);
         } catch (e) {
-            console.error(`PrimoEngine: não consegui iniciar o renderer: ${e.message}`);
+            console.error(`GprEngine: não consegui iniciar o renderer: ${e.message}`);
             return;
         }
         this._proc = proc;
@@ -83,7 +83,7 @@ export class RendererProcess {
 
         const ran = (GLib.get_monotonic_time() - this._startedAt) / 1e6;
         if (this._spawnedWithOffload && ran < OFFLOAD_GRACE_SECONDS) {
-            console.warn('PrimoEngine: o renderer não subiu na GPU dedicada; ' +
+            console.warn('GprEngine: o renderer não subiu na GPU dedicada; ' +
                 'voltando para a integrada.');
             this._offloadFailed = true;
             this._spawn();
@@ -92,7 +92,7 @@ export class RendererProcess {
         if (ran >= STABLE_SECONDS)
             this._restarts = 0;
         if (this._restarts >= MAX_RESTARTS) {
-            console.error('PrimoEngine: o renderer caiu vezes demais; desisti.');
+            console.error('GprEngine: o renderer caiu vezes demais; desisti.');
             return;
         }
         this._restarts++;

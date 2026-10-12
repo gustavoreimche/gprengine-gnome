@@ -1,9 +1,9 @@
 #!/bin/bash
-# Liga o PrimoEngine. O wallpaper só aparece depois de sair e entrar na sessão
+# Liga o GprEngine. O wallpaper só aparece depois de sair e entrar na sessão
 # (no Wayland o GNOME Shell não carrega extensão nova com a sessão aberta).
 set -euo pipefail
 
-UUID="primoengine@gpr"
+UUID="gprengine@gpr"
 
 if [ ! -e "${XDG_DATA_HOME:-$HOME/.local/share}/gnome-shell/extensions/$UUID/metadata.json" ]; then
     echo "Extensão não instalada. Rode ./install.sh antes." >&2

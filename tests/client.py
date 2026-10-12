@@ -18,6 +18,6 @@ def activate(app):
     window.present()
 
 
-app = Gtk.Application(application_id=f'dev.gpr.PrimoEngine.Test.{title}')
+app = Gtk.Application(application_id=f'dev.gpr.GprEngine.Test.{title}')
 app.connect('activate', activate)
 app.run([])

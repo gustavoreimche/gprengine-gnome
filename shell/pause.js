@@ -4,8 +4,8 @@ import Meta from 'gi://Meta';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-const BUS_NAME = 'dev.gpr.PrimoEngine';
-const OBJECT_PATH = '/dev/gpr/PrimoEngine';
+const BUS_NAME = 'dev.gpr.GprEngine';
+const OBJECT_PATH = '/dev/gpr/GprEngine';
 
 // A pausa entra depois desse tempo estável, para não piscar ao arrastar uma
 // janela; a retomada é imediata.

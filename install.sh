@@ -4,9 +4,9 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-UUID="primoengine@gpr"
+UUID="gprengine@gpr"
 DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
-APP="dev.gpr.PrimoEngine.Gallery"
+APP="dev.gpr.GprEngine.Gallery"
 
 link() {
     local source="$1" target="$2"
@@ -21,7 +21,7 @@ link() {
 glib-compile-schemas --strict "$REPO/schemas"
 
 link "$REPO" "$DATA/gnome-shell/extensions/$UUID"
-link "$REPO/wallpapers" "$DATA/primoengine/wallpapers"
+link "$REPO/wallpapers" "$DATA/gprengine/wallpapers"
 link "$REPO/data/$APP.svg" "$DATA/icons/hicolor/scalable/apps/$APP.svg"
 
 mkdir -p "$DATA/applications"
