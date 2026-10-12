@@ -27,7 +27,7 @@ float box(vec2 p, vec2 b) {
 }
 
 // Cruz de altura s, com a base em p = 0.
-float cross(vec2 p, float s) {
+float crossShape(vec2 p, float s) {
     return min(box(p - vec2(0.0, s * 0.5), vec2(s * 0.035, s * 0.5)),
                box(p - vec2(0.0, s * 0.70), vec2(s * 0.20, s * 0.035)));
 }
@@ -65,9 +65,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     // Silhueta: o monte e as três cruzes.
     float ground = p.y - hill(p.x);
     float shape = ground;
-    shape = min(shape, cross(p - vec2(0.0, hill(0.0) - 0.01), 0.40));
-    shape = min(shape, cross(p - vec2(-0.40, hill(-0.40) - 0.01), 0.27));
-    shape = min(shape, cross(p - vec2(0.40, hill(0.40) - 0.01), 0.27));
+    shape = min(shape, crossShape(p - vec2(0.0, hill(0.0) - 0.01), 0.40));
+    shape = min(shape, crossShape(p - vec2(-0.40, hill(-0.40) - 0.01), 0.27));
+    shape = min(shape, crossShape(p - vec2(0.40, hill(0.40) - 0.01), 0.27));
     vec3 dark = vec3(0.03, 0.02, 0.04);
     col = mix(col, dark, smoothstep(px, -px, shape));
     // Fio de luz contornando a silhueta, do lado do sol.
