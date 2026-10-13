@@ -38,12 +38,10 @@ Ubuntu já traz.
 
 ### Lançar uma versão
 
-```bash
-git tag v0.2.0 && git push origin v0.2.0
-```
-
-O GitHub Actions monta o `.deb` (`packaging/build-deb.sh`), publica a release e
-refaz o repositório APT assinado no GitHub Pages (`packaging/build-repo.sh`).
+Aumente o número em `packaging/VERSION` e envie para a `main`. O GitHub Actions
+monta o `.deb` (`packaging/build-deb.sh`), publica a release e refaz o
+repositório APT assinado e o catálogo no GitHub Pages
+(`packaging/build-repo.sh`, `packaging/build-catalog.py`).
 
 ## Usar
 

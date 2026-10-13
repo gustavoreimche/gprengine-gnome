@@ -3,15 +3,14 @@
 #
 #   packaging/build-deb.sh [VERSÃO] [PASTA_DE_SAÍDA]
 #
-# Sem versão, usa a tag mais recente do git (v1.2.3 -> 1.2.3). O pacote instala
+# Sem versão, usa a de packaging/VERSION. O pacote instala
 # a extensão para todos os usuários, junto com o renderer, a galeria e os
 # wallpapers de packaging/base-wallpapers.txt; cada usuário ainda precisa
 # ativá-la.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VERSION="${1:-$(git -C "$REPO" describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')}"
-VERSION="${VERSION:-0.0.0}"
+VERSION="${1:-$(cat "$REPO/packaging/VERSION")}"
 OUT="$(realpath -m "${2:-$REPO/dist}")"
 UUID="gprengine@gpr"
 APP="dev.gpr.GprEngine.Gallery"
