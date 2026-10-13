@@ -7,6 +7,7 @@ que a extensão e o renderer observam.
 import json
 import os
 import sys
+import threading
 
 import gi
 
@@ -16,7 +17,7 @@ gi.require_version('Adw', '1')
 gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import Adw, Gdk, GdkPixbuf, Gio, GLib, Gtk  # noqa: E402
 
-from . import APP_ID, GALLERY_ID, OBJECT_PATH, packages  # noqa: E402
+from . import APP_ID, GALLERY_ID, OBJECT_PATH, catalog, packages  # noqa: E402
 from .settings import load_settings  # noqa: E402
 
 THUMB_WIDTH = 256
@@ -131,6 +132,9 @@ class GalleryWindow(Adw.ApplicationWindow):
         self._pkgs = None
         self._list_rows = {}
         self._list_pkgs = None
+        self._catalog = None
+        self._catalog_loading = False
+        self._installing = set()
 
         self.stack = Adw.ViewStack()
         self.stack.add_titled_with_icon(
@@ -138,6 +142,10 @@ class GalleryWindow(Adw.ApplicationWindow):
             'preferences-desktop-wallpaper-symbolic')
         self.stack.add_titled_with_icon(
             self._build_lists(), 'lists', 'Listas', 'view-list-symbolic')
+        self.stack.add_titled_with_icon(
+            self._build_catalog(), 'catalog', 'Baixar',
+            'folder-download-symbolic')
+        self.stack.connect('notify::visible-child-name', self._on_page)
         self.stack.add_titled_with_icon(
             self._build_settings(), 'settings', 'Ajustes',
             'preferences-system-symbolic')
@@ -266,6 +274,126 @@ class GalleryWindow(Adw.ApplicationWindow):
         row.add_suffix(reset)
         group.add(row)
         return group
+
+    # --- catálogo ---
+
+    def _build_catalog(self):
+        self.catalog_flow = Gtk.FlowBox(
+            selection_mode=Gtk.SelectionMode.NONE, homogeneous=True,
+            column_spacing=6, row_spacing=6, max_children_per_line=8,
+            valign=Gtk.Align.START, margin_top=18, margin_bottom=18,
+            margin_start=18, margin_end=18, activate_on_single_click=True)
+        self.catalog_flow.connect('child-activated', self._on_catalog_card)
+        self.catalog_scrolled = Gtk.ScrolledWindow(
+            child=self.catalog_flow, hscrollbar_policy=Gtk.PolicyType.NEVER)
+
+        loading = Adw.StatusPage(title='Carregando o catálogo…')
+        loading.set_child(Gtk.Spinner(spinning=True, width_request=32,
+                                      height_request=32,
+                                      halign=Gtk.Align.CENTER))
+        self.catalog_error = Adw.StatusPage(
+            icon_name='network-offline-symbolic',
+            title='Não foi possível abrir o catálogo')
+        retry = Gtk.Button(label='Tentar de novo', halign=Gtk.Align.CENTER)
+        retry.add_css_class('pill')
+        retry.connect('clicked', lambda *_: self._load_catalog())
+        self.catalog_error.set_child(retry)
+        done = Adw.StatusPage(
+            icon_name='object-select-symbolic', title='Tudo instalado',
+            description='Você já tem todos os wallpapers do catálogo.')
+
+        self.catalog_pages = Gtk.Stack()
+        self.catalog_pages.add_named(loading, 'loading')
+        self.catalog_pages.add_named(self.catalog_error, 'error')
+        self.catalog_pages.add_named(done, 'done')
+        self.catalog_pages.add_named(self.catalog_scrolled, 'grid')
+        return self.catalog_pages
+
+    def _on_page(self, stack, _pspec):
+        if stack.get_visible_child_name() == 'catalog' and self._catalog is None:
+            self._load_catalog()
+
+    def _load_catalog(self):
+        if self._catalog_loading:
+            return
+        self._catalog_loading = True
+        self.catalog_pages.set_visible_child_name('loading')
+
+        def work():
+            try:
+                entries = catalog.fetch_index()
+                for entry in entries:
+                    try:
+                        entry['thumb_path'] = catalog.fetch_thumbnail(entry)
+                    except catalog.CatalogError:
+                        entry['thumb_path'] = ''
+                GLib.idle_add(self._on_catalog, entries, None)
+            except catalog.CatalogError as e:
+                GLib.idle_add(self._on_catalog, None, str(e))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _on_catalog(self, entries, error):
+        self._catalog_loading = False
+        if error:
+            self.catalog_error.set_description(error)
+            self.catalog_pages.set_visible_child_name('error')
+        else:
+            self._catalog = entries
+            self._show_catalog()
+        return GLib.SOURCE_REMOVE
+
+    def _show_catalog(self):
+        """Mostra o que ainda não está instalado."""
+        if self._catalog is None:
+            return
+        have = {p['id'] for p in self._pkgs or []}
+        missing = [e for e in self._catalog if e['id'] not in have]
+        position = self.catalog_scrolled.get_vadjustment().get_value()
+        self.catalog_flow.remove_all()
+        for entry in missing:
+            busy = entry['id'] in self._installing
+            size = max(1, round(entry['size'] / 1024))
+            card = Card({
+                'id': entry['id'], 'name': entry['name'],
+                'author': 'Baixando…' if busy else f'Baixar · {size} kB',
+                'thumbnail': entry['thumb_path'], 'error': '',
+                'unsupported': False,
+            }, False)
+            card.entry = entry
+            card.set_sensitive(not busy)
+            self.catalog_flow.append(card)
+        self.catalog_pages.set_visible_child_name('grid' if missing else 'done')
+        GLib.idle_add(lambda: self.catalog_scrolled.get_vadjustment()
+                      .set_value(position) and False)
+
+    def _on_catalog_card(self, _flow, card):
+        entry = card.entry
+        if entry['id'] in self._installing:
+            return
+        self._installing.add(entry['id'])
+        self._show_catalog()
+
+        def work():
+            try:
+                catalog.install(entry)
+                error = None
+            except catalog.CatalogError as e:
+                error = str(e)
+            GLib.idle_add(self._on_installed, entry, error)
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _on_installed(self, entry, error):
+        self._installing.discard(entry['id'])
+        if error:
+            self.toast(error)
+            self._show_catalog()
+        else:
+            self.toast(f'{entry["name"]} instalado.')
+            # O renderer relê as pastas e avisa; a grade se refaz sozinha.
+            self._call('Reload')
+        return GLib.SOURCE_REMOVE
 
     # --- listas ---
 
@@ -512,6 +640,7 @@ class GalleryWindow(Adw.ApplicationWindow):
                 self.flow.append(Card(pkg, pkg['id'] == self._current))
             GLib.idle_add(lambda: scroll.set_value(position) and False)
             self._sync_lists()
+            self._show_catalog()
         self.pages.set_visible_child_name('grid' if pkgs else 'empty')
 
     # --- ações ---

@@ -61,6 +61,16 @@ refaz o repositório APT assinado no GitHub Pages (`packaging/build-repo.sh`).
   Métodos: `Apply(id)`, `Next`, `Previous`, `SetPaused(bool, motivo)`,
   `Reload`, `List`, `Stats`.
 
+## Baixar mais wallpapers
+
+O pacote `.deb` traz um conjunto básico (`packaging/base-wallpapers.txt`). O
+resto fica no catálogo: na galeria, a aba **Baixar** mostra o que você ainda
+não tem e instala com um clique em `~/.config/gprengine/wallpapers/`.
+
+O catálogo é publicado junto com o repositório APT, a partir de `wallpapers/`:
+todo commit na `main` que mexe ali republica. Para um wallpaper novo aparecer
+com miniatura, rode `tools/catalog-thumbs.py` antes do commit.
+
 ## Quando ele pausa
 
 | Motivo | Padrão |

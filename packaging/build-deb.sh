@@ -5,7 +5,8 @@
 #
 # Sem versão, usa a tag mais recente do git (v1.2.3 -> 1.2.3). O pacote instala
 # a extensão para todos os usuários, junto com o renderer, a galeria e os
-# wallpapers embutidos; cada usuário ainda precisa ativá-la.
+# wallpapers de packaging/base-wallpapers.txt; cada usuário ainda precisa
+# ativá-la.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -22,7 +23,12 @@ EXT="$STAGE/usr/share/gnome-shell/extensions/$UUID"
 mkdir -p "$EXT" "$STAGE/DEBIAN" "$STAGE/usr/bin" "$STAGE/usr/share/applications" \
          "$STAGE/usr/share/icons/hicolor/scalable/apps" "$STAGE/usr/share/doc/gprengine"
 cp -r "$REPO/metadata.json" "$REPO/extension.js" "$REPO/shell" "$REPO/engine" \
-      "$REPO/bin" "$REPO/wallpapers" "$EXT/"
+      "$REPO/bin" "$EXT/"
+# Só o conjunto básico vai no pacote; o resto vem pelo catálogo da galeria.
+mkdir "$EXT/wallpapers"
+while read -r id; do
+    [ -n "$id" ] && cp -r "$REPO/wallpapers/$id" "$EXT/wallpapers/"
+done < "$REPO/packaging/base-wallpapers.txt"
 mkdir "$EXT/schemas"
 cp "$REPO"/schemas/*.gschema.xml "$EXT/schemas/"
 glib-compile-schemas --strict "$EXT/schemas"

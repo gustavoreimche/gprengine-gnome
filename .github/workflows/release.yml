@@ -1,10 +1,13 @@
 # A cada tag vX.Y.Z: monta o .deb, publica como release e refaz o repositório
-# APT no GitHub Pages com todos os .deb já lançados.
+# APT no GitHub Pages com todos os .deb já lançados. O catálogo de wallpapers
+# vai no mesmo site, então mexer em wallpapers/ na main também republica.
 name: release
 
 on:
   push:
     tags: ['v*']
+    branches: [main]
+    paths: ['wallpapers/**', 'catalog/**', 'packaging/**', '.github/workflows/release.yml']
   workflow_dispatch:
 
 permissions:
@@ -28,7 +31,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Ferramentas
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-bin dpkg-dev apt-utils gnupg
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-bin dpkg-dev apt-utils gnupg python3
 
       - name: Montar o .deb
         if: startsWith(github.ref, 'refs/tags/v')
@@ -53,6 +56,9 @@ jobs:
           printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
           key="$(gpg --list-secret-keys --with-colons | awk -F: '$1 == "fpr" { print $10; exit }')"
           packaging/build-repo.sh debs site "$key"
+
+      - name: Montar o catálogo de wallpapers
+        run: packaging/build-catalog.py site/catalog
 
       - uses: actions/upload-pages-artifact@v3
         with:
