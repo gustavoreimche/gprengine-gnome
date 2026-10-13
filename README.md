@@ -84,26 +84,9 @@ rodar, porque ali o fundo aparece.
 
 ## Criar um wallpaper
 
-Uma pasta em `~/.config/gprengine/wallpapers/` (o botão **+** da galeria a
-abre):
-
-```
-meu-shader/
-├── manifest.json
-└── content/
-    └── shader.glsl
-```
-
-```json
-{
-  "format": 1,
-  "id": "meu-shader",
-  "name": "Meu shader",
-  "author": "você",
-  "type": "glsl",
-  "entry": "content/shader.glsl"
-}
-```
+Na galeria: **+** › **Criar um wallpaper…**. O GprEngine cria a pasta em
+`~/.config/gprengine/wallpapers/` com um shader de exemplo, aplica e abre o
+arquivo; a cada vez que você salva, o wallpaper recarrega sozinho.
 
 O shader segue o contrato do Shadertoy: escreva só `mainImage`.
 
@@ -114,13 +97,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }
 ```
 
-Uniforms: `iResolution`, `iTime`, `iTimeDelta`, `iFrame`, `iDate`, e `iMouse`
-(sempre zero). Shaders de uma passada do Shadertoy costumam rodar colando o
-código; os que usam `iChannel`, buffers ou áudio ainda não.
+Para compartilhar, clique com o botão direito no cartão e exporte um arquivo
+`.gprwallpaper`; quem recebe usa **+** › **Instalar de um arquivo…**.
 
-Depois de salvar, use o botão de recarregar da galeria. Se o shader não
-compilar, o cartão mostra o erro com a linha do seu arquivo e o wallpaper
-anterior continua.
+O guia completo (formato da pasta, valores disponíveis, receitas, desempenho)
+está em [docs/wallpapers-personalizados.md](docs/wallpapers-personalizados.md).
 
 ## Como funciona
 

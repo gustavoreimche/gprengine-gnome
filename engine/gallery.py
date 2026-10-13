@@ -17,7 +17,7 @@ gi.require_version('Adw', '1')
 gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import Adw, Gdk, GdkPixbuf, Gio, GLib, Gtk  # noqa: E402
 
-from . import APP_ID, GALLERY_ID, OBJECT_PATH, catalog, packages  # noqa: E402
+from . import APP_ID, GALLERY_ID, OBJECT_PATH, catalog, custom, packages  # noqa: E402
 from .settings import load_settings  # noqa: E402
 
 THUMB_WIDTH = 256
@@ -154,9 +154,20 @@ class GalleryWindow(Adw.ApplicationWindow):
         header.set_title_widget(Adw.ViewSwitcher(
             stack=self.stack, policy=Adw.ViewSwitcherPolicy.WIDE))
 
-        add = Gtk.Button(icon_name='list-add-symbolic',
-                         tooltip_text='Abrir a pasta dos meus wallpapers')
-        add.connect('clicked', self._on_open_folder)
+        menu = Gio.Menu()
+        menu.append('Criar um wallpaper…', 'win.create')
+        menu.append('Instalar de um arquivo…', 'win.install')
+        menu.append('Abrir a pasta dos meus wallpapers', 'win.folder')
+        menu.append('Guia: como criar um wallpaper', 'win.guide')
+        for name, handler in (('create', self._on_create),
+                              ('install', self._on_install),
+                              ('folder', self._on_open_folder),
+                              ('guide', self._on_guide)):
+            action = Gio.SimpleAction.new(name, None)
+            action.connect('activate', handler)
+            self.add_action(action)
+        add = Gtk.MenuButton(icon_name='list-add-symbolic', menu_model=menu,
+                             tooltip_text='Criar, instalar e compartilhar wallpapers')
         header.pack_start(add)
         reload_button = Gtk.Button(icon_name='view-refresh-symbolic',
                                    tooltip_text='Recarregar wallpapers')
@@ -637,7 +648,12 @@ class GalleryWindow(Adw.ApplicationWindow):
             self._pkgs = pkgs
             self.flow.remove_all()
             for pkg in pkgs:
-                self.flow.append(Card(pkg, pkg['id'] == self._current))
+                card = Card(pkg, pkg['id'] == self._current)
+                click = Gtk.GestureClick(button=Gdk.BUTTON_SECONDARY)
+                click.connect('pressed', lambda _g, _n, x, y, c=card:
+                              self._on_card_menu(c, x, y))
+                card.add_controller(click)
+                self.flow.append(card)
             GLib.idle_add(lambda: scroll.set_value(position) and False)
             self._sync_lists()
             self._show_catalog()
@@ -671,10 +687,161 @@ class GalleryWindow(Adw.ApplicationWindow):
         self._call('SetPaused',
                    GLib.Variant('(bs)', (button.get_active(), 'manual')))
 
-    def _on_open_folder(self, _button):
+    def _on_open_folder(self, *_):
         os.makedirs(packages.USER_DIR, exist_ok=True)
-        Gio.AppInfo.launch_default_for_uri(
-            GLib.filename_to_uri(packages.USER_DIR, None), None)
+        self._open(packages.USER_DIR)
+
+    # --- wallpapers personalizados ---
+
+    def _open(self, path):
+        Gio.AppInfo.launch_default_for_uri(GLib.filename_to_uri(path, None), None)
+
+    def _on_guide(self, *_):
+        self._open(os.path.join(packages.REPO, 'docs',
+                                'wallpapers-personalizados.md'))
+
+    def _on_create(self, *_):
+        entry = Adw.EntryRow(title='Nome do wallpaper')
+        box = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
+        box.add_css_class('boxed-list')
+        box.append(entry)
+        dialog = Adw.AlertDialog(
+            heading='Criar um wallpaper',
+            body='Cria uma pasta com um shader de exemplo, já funcionando, e '
+                 'abre o arquivo para você editar. Ao salvar, o wallpaper '
+                 'recarrega sozinho.',
+            extra_child=box)
+        dialog.add_response('cancel', 'Cancelar')
+        dialog.add_response('create', 'Criar')
+        dialog.set_response_appearance('create', Adw.ResponseAppearance.SUGGESTED)
+        dialog.set_default_response('create')
+        entry.connect('entry-activated', lambda *_: dialog.response('create') or dialog.close())
+
+        def done(_dialog, response):
+            if response != 'create':
+                return
+            try:
+                pkg_id, shader = custom.create_template(
+                    entry.get_text().strip(), GLib.get_real_name() or '')
+            except (ValueError, OSError) as e:
+                self.toast(str(e))
+                return
+            self._open(shader)
+            # O renderer vê a pasta nova sozinho; dá um instante e aplica.
+            GLib.timeout_add(900, lambda: self._apply(pkg_id) and False)
+            self.toast('Wallpaper criado e aplicado. Edite o shader e salve.')
+
+        dialog.connect('response', done)
+        dialog.present(self)
+
+    def _on_install(self, *_):
+        file_filter = Gtk.FileFilter(name='Wallpaper do GprEngine')
+        file_filter.add_pattern(f'*{custom.ARCHIVE_SUFFIX}')
+        file_filter.add_pattern('*.tar.gz')
+        filters = Gio.ListStore.new(Gtk.FileFilter)
+        filters.append(file_filter)
+        dialog = Gtk.FileDialog(title='Instalar wallpaper', filters=filters)
+
+        def chosen(_dialog, result):
+            try:
+                path = dialog.open_finish(result).get_path()
+            except GLib.Error:
+                return
+            try:
+                self._confirm_install(path, custom.inspect_archive(path))
+            except catalog.CatalogError as e:
+                self.toast(str(e))
+
+        dialog.open(self, None, chosen)
+
+    def _confirm_install(self, path, pack):
+        lines = [f'Autor: {pack["author"]}' if pack['author'] else 'Autor não informado',
+                 'Arquivos: ' + ', '.join(pack['files'])]
+        if pack['replaces']:
+            lines.append(f'Substitui o wallpaper "{pack["id"]}" que você já tem.')
+        dialog = Adw.AlertDialog(heading=f'Instalar "{pack["name"]}"?',
+                                 body='\n\n'.join(lines))
+        dialog.add_response('cancel', 'Cancelar')
+        dialog.add_response('install', 'Instalar')
+        dialog.set_response_appearance('install', Adw.ResponseAppearance.SUGGESTED)
+
+        def done(_dialog, response):
+            if response != 'install':
+                return
+            try:
+                custom.install_archive(path)
+            except catalog.CatalogError as e:
+                self.toast(str(e))
+                return
+            self.toast(f'{pack["name"]} instalado.')
+            self._call('Reload')
+
+        dialog.connect('response', done)
+        dialog.present(self)
+
+    def _on_card_menu(self, card, x, y):
+        """Clique direito num cartão: exportar e, nos seus, abrir e remover."""
+        pkg = card.pkg
+        mine = custom.is_custom(pkg['id'])
+        popover = Gtk.Popover(has_arrow=True, position=Gtk.PositionType.BOTTOM)
+        popover.set_parent(card)
+        rect = Gdk.Rectangle()
+        rect.x, rect.y, rect.width, rect.height = int(x), int(y), 1, 1
+        popover.set_pointing_to(rect)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        popover.set_child(box)
+
+        def item(label, handler):
+            button = Gtk.Button(label=label)
+            button.add_css_class('flat')
+            button.get_child().set_xalign(0)
+            button.connect('clicked', lambda *_: (popover.popdown(), handler()))
+            box.append(button)
+
+        item('Exportar para compartilhar…', lambda: self._export(pkg))
+        if mine:
+            item('Abrir a pasta', lambda: self._open(pkg['path']))
+            item('Remover', lambda: self._confirm_remove(pkg))
+        popover.connect('closed', lambda *_: GLib.idle_add(popover.unparent))
+        popover.popup()
+
+    def _export(self, pkg):
+        dialog = Gtk.FileDialog(title='Exportar wallpaper',
+                                initial_name=f'{pkg["id"]}{custom.ARCHIVE_SUFFIX}')
+
+        def chosen(_dialog, result):
+            try:
+                target = dialog.save_finish(result).get_path()
+            except GLib.Error:
+                return
+            try:
+                custom.export_package(pkg['path'], pkg['id'], target)
+            except OSError as e:
+                self.toast(str(e))
+                return
+            self.toast(f'Exportado para {os.path.basename(target)}.')
+
+        dialog.save(self, None, chosen)
+
+    def _confirm_remove(self, pkg):
+        dialog = Adw.AlertDialog(
+            heading=f'Remover "{pkg["name"]}"?',
+            body='A pasta do wallpaper é apagada.')
+        dialog.add_response('cancel', 'Cancelar')
+        dialog.add_response('remove', 'Remover')
+        dialog.set_response_appearance('remove', Adw.ResponseAppearance.DESTRUCTIVE)
+
+        def done(_dialog, response):
+            if response != 'remove':
+                return
+            try:
+                custom.remove(pkg['id'])
+            except (ValueError, OSError) as e:
+                self.toast(str(e))
+            self._call('Reload')
+
+        dialog.connect('response', done)
+        dialog.present(self)
 
 
 class Gallery(Adw.Application):

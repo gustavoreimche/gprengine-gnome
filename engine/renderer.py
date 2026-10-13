@@ -164,6 +164,12 @@ class WallpaperWindow(Gtk.Window):
         wanted = pkg.id if pkg else None
         if wanted == self._program_id:
             return
+        # O wallpaper em uso está com erro enquanto é editado: fica o que já
+        # estava compilado (ver Engine.reload).
+        broken = self.engine.package(self.engine.current)
+        if (pkg is None and broken and broken.error and self._program and
+                self._program_id == broken.id):
+            return
         if self._program:
             self._program.destroy()
             self._program = None
@@ -261,6 +267,9 @@ class Engine(Gtk.Application):
         self._resumed_at = time.monotonic()
         self._speed = 1.0
         self._rotation = 0
+        self._monitors = []
+        self._reload_id = 0
+        self._editing = False
         self._validated = False
         self._registration = 0
         self._fps_window = (time.monotonic(), 0, 0.0)
@@ -295,6 +304,7 @@ class Engine(Gtk.Application):
         monitors = Gdk.Display.get_default().get_monitors()
         monitors.connect('items-changed', lambda *_: self._sync_monitors())
         self._sync_monitors()
+        self._watch_user()
 
     def do_activate(self):
         pass
@@ -428,13 +438,55 @@ class Engine(Gtk.Application):
         index = ids.index(self.current) if self.current in ids else -offset
         self.set_current(ids[(index + offset) % len(ids)])
 
-    def reload(self):
+    def reload(self, editing=False):
+        """Relê as pastas. Com `editing` (um arquivo do usuário mudou), um
+        erro no wallpaper em uso não troca de wallpaper: o último quadro que
+        compilou continua na tela até o arquivo ser consertado."""
         self.packages = packages.discover()
         self._validated = False
-        for window in self.windows.values():
-            window._program_id = None
+        self._editing = editing
         self._validate()
+        self._editing = False
+        current = self.package(self.current)
+        if not (editing and current and current.error):
+            for window in self.windows.values():
+                window._program_id = None
         self.redraw()
+        self._watch_user()
+
+    def _watch_user(self):
+        """Vigia a pasta de wallpapers do usuário: salvar um shader (ou
+        criar, instalar, apagar um wallpaper) recarrega sozinho."""
+        for monitor in self._monitors:
+            monitor.cancel()
+        self._monitors = []
+        dirs = {packages.USER_DIR}
+        for pkg in self.packages:
+            if not pkg.builtin:
+                dirs.add(pkg.path)
+                if pkg.entry:
+                    dirs.add(os.path.dirname(pkg.entry))
+        for path in dirs:
+            try:
+                os.makedirs(path, exist_ok=True)
+                monitor = Gio.File.new_for_path(path).monitor_directory(
+                    Gio.FileMonitorFlags.NONE, None)
+            except (GLib.Error, OSError):
+                continue
+            monitor.connect('changed', self._on_user_changed)
+            self._monitors.append(monitor)
+
+    def _on_user_changed(self, _monitor, file, _other, _event):
+        # Arquivos temporários de editor e de instalação não contam.
+        if file.get_basename().startswith('.') or self._reload_id:
+            return
+
+        def fire():
+            self._reload_id = 0
+            self.reload(editing=True)
+            return GLib.SOURCE_REMOVE
+
+        self._reload_id = GLib.timeout_add(400, fire)
 
     # --- validação e miniaturas ---
 
@@ -479,7 +531,9 @@ class Engine(Gtk.Application):
         for pkg in self.packages:
             if pkg.type == 'glsl' and pkg.entry:
                 self._check(pkg, thumbnail=True)
-        if not self.current_package():
+        broken = self.package(self.current)
+        if not self.current_package() and not (
+                self._editing and broken and broken.error):
             fallback = next(iter(self.usable()), None)
             self.current = fallback.id if fallback else ''
         self.redraw()

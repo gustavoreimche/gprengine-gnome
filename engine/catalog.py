@@ -85,7 +85,7 @@ def fetch_thumbnail(entry):
     return path
 
 
-def _members(archive, pkg_id):
+def checked_members(archive, pkg_id):
     """Só arquivos e pastas comuns, todos dentro de `<id>/`."""
     members = archive.getmembers()
     if len(members) > MAX_FILES:
@@ -110,13 +110,18 @@ def install(entry):
     data = _fetch(f'packages/{pkg_id}.tar.gz', MAX_ARCHIVE)
     if hashlib.sha256(data).hexdigest() != entry['sha256']:
         raise CatalogError('O arquivo baixado não confere com o catálogo')
+    return install_bytes(data, pkg_id)
 
+
+def install_bytes(data, pkg_id):
+    """Instala um pacote .tar.gz já em memória; substitui o que houver na
+    pasta do usuário com o mesmo id."""
     os.makedirs(packages.USER_DIR, exist_ok=True)
     staging = tempfile.mkdtemp(prefix='.baixando-', dir=packages.USER_DIR)
     try:
         try:
             with tarfile.open(fileobj=io.BytesIO(data), mode='r:gz') as archive:
-                archive.extractall(staging, members=_members(archive, pkg_id))
+                archive.extractall(staging, members=checked_members(archive, pkg_id))
         except (tarfile.TarError, OSError) as e:
             raise CatalogError(f'O pacote não pôde ser aberto: {e}') from e
         pkg = packages.load(os.path.join(staging, pkg_id), False)

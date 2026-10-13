@@ -28,7 +28,9 @@ mkdir "$EXT/wallpapers"
 while read -r id; do
     [ -n "$id" ] && cp -r "$REPO/wallpapers/$id" "$EXT/wallpapers/"
 done < "$REPO/packaging/base-wallpapers.txt"
-mkdir "$EXT/schemas"
+mkdir "$EXT/schemas" "$EXT/docs"
+# O guia é aberto pela galeria.
+cp "$REPO/docs/wallpapers-personalizados.md" "$EXT/docs/"
 cp "$REPO"/schemas/*.gschema.xml "$EXT/schemas/"
 glib-compile-schemas --strict "$EXT/schemas"
 find "$EXT" -name __pycache__ -prune -exec rm -rf {} +
