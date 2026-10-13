@@ -51,6 +51,10 @@
       <default>true</default>
       <summary>Pausar quando as janelas cobrem a área de trabalho</summary>
     </key>
+    <key name="pause-with-windows" type="b">
+      <default>false</default>
+      <summary>Pausar o monitor que tiver qualquer janela aberta, não só quando coberto</summary>
+    </key>
     <key name="force-offscreen" type="b">
       <default>false</default>
       <summary>Desenhar o fundo via textura intermediária (compatibilidade)</summary>

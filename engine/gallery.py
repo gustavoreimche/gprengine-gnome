@@ -38,7 +38,7 @@ CSS = """
 
 # (valor gravado no GSettings, rótulo)
 SCALES = [(50, '50 %'), (75, '75 %'), (100, '100 %')]
-FPS = [(30, '30 FPS'), (60, '60 FPS')]
+FPS = [(15, '15 FPS'), (20, '20 FPS'), (30, '30 FPS'), (60, '60 FPS')]
 GPUS = [('integrated', 'Integrada'), ('discrete', 'Dedicada (NVIDIA)')]
 BATTERY = [('continue', 'Continuar'), ('limit', 'Limitar a 15 FPS'),
            ('pause', 'Pausar')]
@@ -561,6 +561,15 @@ class GalleryWindow(Adw.ApplicationWindow):
         self.settings.bind('pause-when-covered', covered, 'active',
                            Gio.SettingsBindFlags.DEFAULT)
         pause.add(covered)
+        windows = Adw.SwitchRow(
+            title='Só animar com a área de trabalho livre',
+            subtitle='Qualquer janela aberta num monitor congela o wallpaper '
+                     'dele; os outros monitores seguem')
+        self.settings.bind('pause-with-windows', windows, 'active',
+                           Gio.SettingsBindFlags.DEFAULT)
+        self.settings.bind('pause-when-covered', windows, 'sensitive',
+                           Gio.SettingsBindFlags.GET)
+        pause.add(windows)
         pause.add(self._combo('Na bateria', '', 'battery-mode', BATTERY))
         page.add(pause)
 
@@ -569,7 +578,11 @@ class GalleryWindow(Adw.ApplicationWindow):
             'Escala de renderização',
             'Abaixo de 100 % o shader desenha menos pixels e a imagem é '
             'ampliada', 'render-scale', SCALES))
-        performance.add(self._combo('Limite de quadros', '', 'fps-limit', FPS))
+        performance.add(self._combo(
+            'Limite de quadros',
+            'Menos quadros aliviam o sistema inteiro: a tela é refeita a cada '
+            'quadro do wallpaper. 15 ou 20 bastam para animações calmas',
+            'fps-limit', FPS))
         self.gpu_row = self._combo(
             'Placa de vídeo',
             'A integrada gasta menos; trocar reinicia o wallpaper', 'gpu',

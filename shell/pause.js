@@ -38,6 +38,12 @@ function unionArea(rects) {
     return area;
 }
 
+// Janelas que contam como "tem algo aberto": menus, dicas e avisos não.
+const REAL_WINDOWS = new Set([
+    Meta.WindowType.NORMAL, Meta.WindowType.DIALOG,
+    Meta.WindowType.MODAL_DIALOG, Meta.WindowType.UTILITY,
+]);
+
 // Decide quando o renderer deve parar e avisa por D-Bus. Cada condição é um
 // motivo independente; o renderer só volta quando todos saem.
 export class PauseController {
@@ -84,6 +90,7 @@ export class PauseController {
             }, this);
         this._settings.connectObject(
             'changed::pause-when-covered', () => this._evaluate(),
+            'changed::pause-with-windows', () => this._evaluate(),
             'changed::battery-mode', () => this._evaluate(),
             this);
 
@@ -158,6 +165,9 @@ export class PauseController {
         const windows = this._coveringWindows(monitorIndex);
         if (windows.some(w => w.is_maximized()))
             return true;
+        // "Só animar com a área de trabalho livre": basta uma janela à vista.
+        if (this._settings.get_boolean('pause-with-windows'))
+            return windows.some(w => !w.minimized && REAL_WINDOWS.has(w.get_window_type()));
 
         const area = Main.layoutManager.getWorkAreaForMonitor(monitorIndex);
         const rects = [];
