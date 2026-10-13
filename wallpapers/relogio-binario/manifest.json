@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "relogio-binario",
+  "name": "Relógio binário",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}

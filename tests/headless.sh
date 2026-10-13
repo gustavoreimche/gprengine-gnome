@@ -97,8 +97,24 @@ alive)
 stop)
     if [ -f "$ROOT/pid" ]; then
         # setsid fez do dbus-run-session o líder do grupo: mata tudo junto.
+        daemons="$(pgrep -P "$(cat "$ROOT/pid")" -x dbus-daemon || true)"
         kill -- "-$(cat "$ROOT/pid")" 2>/dev/null || true
+        [ -n "$daemons" ] && kill $daemons 2>/dev/null || true
         rm -f "$ROOT/pid"
+    fi
+    # Os serviços ativados no barramento de teste (gvfsd, portal, o próprio
+    # dbus-daemon...) saem do grupo e sobrevivem; cada sessão órfã segura
+    # instâncias de inotify até faltar para a sessão real.
+    if [ -s "$ROOT/bus" ]; then
+        bus="DBUS_SESSION_BUS_ADDRESS=$(cat "$ROOT/bus")"
+        for env in /proc/[0-9]*/environ; do
+            pid="${env#/proc/}"; pid="${pid%/environ}"
+            [ "$pid" = "$$" ] && continue
+            if [ -r "$env" ] && cat "$env" 2>/dev/null | tr '\0' '\n' | grep -qxF "$bus"; then
+                kill "$pid" 2>/dev/null || true
+            fi
+        done
+        rm -f "$ROOT/bus"
     fi
     ;;
 *)

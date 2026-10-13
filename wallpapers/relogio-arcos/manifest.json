@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "relogio-arcos",
+  "name": "Relógio em arcos",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}

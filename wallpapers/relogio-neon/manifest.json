@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "relogio-neon",
+  "name": "Relógio neon",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}

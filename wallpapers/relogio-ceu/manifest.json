@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "relogio-ceu",
+  "name": "Relógio do céu",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}
