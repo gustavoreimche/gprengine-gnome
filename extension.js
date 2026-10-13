@@ -10,7 +10,8 @@ export default class GprEngineExtension extends Extension {
         this._process = new RendererProcess(this.path, this._settings);
         this._wallpaper = new WallpaperManager(this._process, this._settings);
         this._pause = new PauseController(this._settings,
-            window => this._wallpaper.isRenderer(window));
+            window => this._wallpaper.isRenderer(window),
+            () => this._wallpaper.connectors());
     }
 
     disable() {

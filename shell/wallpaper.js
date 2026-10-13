@@ -215,6 +215,17 @@ export class WallpaperManager {
         this._syncLayers();
     }
 
+    // Índice do monitor -> conector, para cada janela do renderer.
+    connectors() {
+        const found = new Map();
+        for (const window of this._windows.keys()) {
+            const index = this._monitorOf(window);
+            if (index >= 0)
+                found.set(index, (window.title ?? '').slice(TITLE_PREFIX.length));
+        }
+        return found;
+    }
+
     _monitorOf(window) {
         const title = window.title ?? '';
         if (!title.startsWith(TITLE_PREFIX))

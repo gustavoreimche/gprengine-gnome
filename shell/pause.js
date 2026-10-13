@@ -41,9 +41,12 @@ function unionArea(rects) {
 // Decide quando o renderer deve parar e avisa por D-Bus. Cada condição é um
 // motivo independente; o renderer só volta quando todos saem.
 export class PauseController {
-    constructor(settings, isRenderer) {
+    // `connectors` devolve um Map de índice do monitor -> conector ('HDMI-1'),
+    // só dos monitores que têm janela do renderer.
+    constructor(settings, isRenderer, connectors) {
         this._settings = settings;
         this._isRenderer = isRenderer;
+        this._connectors = connectors;
         this._sent = new Map();
         this._powerSaving = null;
         this._onBattery = false;
@@ -182,12 +185,28 @@ export class PauseController {
             this._settings.get_boolean('pause-when-covered') &&
             monitors.every(i => this._isCovered(i));
         const mode = this._settings.get_string('battery-mode');
+        // Por monitor: com uma janela maximizada num e a área de trabalho à
+        // vista no outro, só o primeiro para de desenhar.
+        const perMonitor = {};
+        const coverPauses = this._settings.get_boolean('pause-when-covered');
+        for (const [index, connector] of this._connectors()) {
+            perMonitor[`fullscreen@${connector}`] = !overview &&
+                global.display.get_monitor_in_fullscreen(index);
+            perMonitor[`covered@${connector}`] = !overview && coverPauses &&
+                this._isCovered(index);
+        }
+        // Um monitor que saiu não segura mais nenhum motivo.
+        for (const reason of this._sent.keys()) {
+            if (reason.includes('@') && !(reason in perMonitor))
+                perMonitor[reason] = false;
+        }
         return {
             reasons: {
                 fullscreen,
                 covered,
                 'screen-off': this._screenOff,
                 battery: this._onBattery && mode === 'pause',
+                ...perMonitor,
             },
             powerSaving: this._onBattery && mode === 'limit',
         };

@@ -107,7 +107,7 @@ class WallpaperWindow(Gtk.Window):
             return
         gl.glGenVertexArrays(1, gl.byref(self._vao))
         self.engine.on_window_realized(self)
-        self.set_running(not self.engine.paused)
+        self.set_running(self.engine.runs(self.monitor.get_connector()))
 
     def _on_unrealize(self, area):
         self.set_running(False)
@@ -126,6 +126,23 @@ class WallpaperWindow(Gtk.Window):
         # Tamanho do framebuffer em pixels, já com a escala HiDPI.
         self.size = (width, height)
         area.queue_render()
+
+    def _density(self):
+        """Fração do framebuffer que corresponde aos pixels reais da tela.
+
+        Com escala fracionária (133 %, por exemplo) o GTK entrega um
+        framebuffer na escala inteira de cima (200 %) e o compositor o reduz.
+        Desenhar o shader nesse tamanho seria calcular mais que o dobro dos
+        pixels que a tela tem; ele é desenhado no tamanho real e ampliado."""
+        surface = self.get_surface()
+        if surface is None:
+            return 1.0
+        try:
+            real = surface.get_scale()
+        except AttributeError:      # GTK anterior ao 4.12
+            return 1.0
+        whole = surface.get_scale_factor()
+        return min(1.0, real / whole) if whole > 0 and real > 0 else 1.0
 
     def make_current(self):
         if not self.area.get_realized():
@@ -195,7 +212,7 @@ class WallpaperWindow(Gtk.Window):
         now = self.engine.clock()
         delta = min(max(now - self._last_time, 0.0), MAX_DELTA)
         self._last_time = now
-        scale = self.engine.render_scale / 100
+        scale = self.engine.render_scale / 100 * self._density()
         tw, th = max(1, round(width * scale)), max(1, round(height * scale))
         self.target_size = (tw, th)
 
@@ -269,6 +286,7 @@ class Engine(Gtk.Application):
         self._rotation = 0
         self._monitors = []
         self._reload_id = 0
+        self.monitor_reasons = {}
         self._editing = False
         self._validated = False
         self._registration = 0
@@ -366,7 +384,25 @@ class Engine(Gtk.Application):
     def usable(self):
         return [p for p in self.packages if p.usable]
 
+    def runs(self, connector):
+        """Verdadeiro se a janela deste monitor deve estar desenhando."""
+        return not self.paused and not self.monitor_reasons.get(connector)
+
     def set_paused(self, paused, reason):
+        # 'covered@HDMI-1': o motivo vale só para a janela daquele monitor.
+        # Os outros monitores continuam animando.
+        if '@' in reason:
+            connector = reason.split('@', 1)[1]
+            held = self.monitor_reasons.setdefault(connector, set())
+            if paused:
+                held.add(reason)
+            else:
+                held.discard(reason)
+            window = self.windows.get(connector)
+            if window:
+                window.set_running(self.runs(connector))
+            self._emit_changed([])
+            return
         was = self.paused
         if paused:
             self.reasons.add(reason)
@@ -378,8 +414,8 @@ class Engine(Gtk.Application):
             self._elapsed += (time.monotonic() - self._resumed_at) * self._speed
         else:
             self._resumed_at = time.monotonic()
-        for window in self.windows.values():
-            window.set_running(not self.paused)
+        for connector, window in self.windows.items():
+            window.set_running(self.runs(connector))
         self._emit_changed(['Paused'])
 
     def set_current(self, pkg_id):
@@ -623,6 +659,7 @@ class Engine(Gtk.Application):
             'current': self.current,
             'render_scale': self.render_scale,
             'speed': self._speed,
+            'monitor_reasons': {c: sorted(r) for c, r in self.monitor_reasons.items() if r},
             'playlist': self.settings.get_string('playlist-active'),
             'gl_renderer': self.gl_renderer,
             'gl_version': self.gl_version,
