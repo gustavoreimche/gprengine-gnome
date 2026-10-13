@@ -10,7 +10,7 @@ name: release
 on:
   push:
     branches: [main]
-    paths: ['wallpapers/**', 'catalog/**', 'packaging/**', '.github/workflows/release.yml']
+    paths: ['wallpapers/**', 'catalog/**', 'site/**', 'packaging/**', '.github/workflows/release.yml']
   workflow_dispatch:
 
 permissions:

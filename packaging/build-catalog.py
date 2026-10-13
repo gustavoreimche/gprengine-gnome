@@ -24,6 +24,8 @@ from engine import packages  # noqa: E402
 out = sys.argv[1]
 os.makedirs(os.path.join(out, 'packages'), exist_ok=True)
 os.makedirs(os.path.join(out, 'thumbs'), exist_ok=True)
+# O código de cada shader, em texto: a landing page roda no navegador.
+os.makedirs(os.path.join(out, 'shaders'), exist_ok=True)
 
 
 def archive(pkg):
@@ -55,6 +57,7 @@ for name in sorted(os.listdir(root)):
     data = archive(pkg)
     with open(os.path.join(out, 'packages', f'{pkg.id}.tar.gz'), 'wb') as f:
         f.write(data)
+    shutil.copy(pkg.entry, os.path.join(out, 'shaders', f'{pkg.id}.glsl'))
     thumb = os.path.join(REPO, 'catalog', 'thumbs', f'{pkg.id}.jpg')
     if os.path.isfile(thumb):
         shutil.copy(thumb, os.path.join(out, 'thumbs', f'{pkg.id}.jpg'))

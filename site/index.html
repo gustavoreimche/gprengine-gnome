@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GprEngine: wallpapers vivos para o GNOME</title>
+<meta name="description" content="Wallpapers vivos para o GNOME Shell: shaders desenhados na GPU, que param sozinhos quando ninguém está olhando.">
+<style>
+  :root {
+    --bg: #0b0d12; --panel: #141821; --line: #232937; --text: #e8ebf1;
+    --dim: #98a1b3; --accent: #7cc4ff; --accent-ink: #06121d;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Ubuntu, sans-serif; }
+  a { color: var(--accent); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+
+  header.hero { position: relative; min-height: 92vh; display: flex; align-items: flex-end;
+                overflow: hidden; background: #05070b; }
+  #stage { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .hero::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+                 background: linear-gradient(180deg, rgba(5,7,11,.10) 0%, rgba(5,7,11,0) 28%, rgba(8,10,15,.80) 74%, rgba(11,13,18,.97) 100%); }
+  .hero .wrap { position: relative; z-index: 1; width: 100%; padding-bottom: 56px; }
+  h1 { font-size: clamp(40px, 7vw, 76px); line-height: 1.02; margin: 0 0 14px; letter-spacing: -0.02em; }
+  .lead { font-size: clamp(18px, 2.2vw, 22px); max-width: 620px; margin: 0 0 26px; color: #dfe4ee; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .button { display: inline-block; padding: 12px 20px; border-radius: 12px; font-weight: 600;
+            text-decoration: none; border: 1px solid transparent; }
+  .button.primary { background: var(--accent); color: var(--accent-ink); }
+  .button.ghost { border-color: rgba(255,255,255,.28); color: var(--text); background: rgba(10,12,18,.35);
+                  backdrop-filter: blur(8px); }
+  .now { margin-top: 22px; font-size: 14px; color: var(--dim); }
+  .now b { color: var(--text); font-weight: 600; }
+
+  section { padding: 76px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: clamp(26px, 3.4vw, 36px); margin: 0 0 10px; letter-spacing: -0.01em; }
+  .sub { color: var(--dim); max-width: 640px; margin: 0 0 34px; }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 22px; }
+  .card h3 { margin: 0 0 6px; font-size: 18px; }
+  .card p { margin: 0; color: var(--dim); font-size: 15.5px; }
+
+  .gallery { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+  .thumb { all: unset; cursor: pointer; display: block; border-radius: 12px; overflow: hidden;
+           background: var(--panel); border: 1px solid var(--line); }
+  .thumb:focus-visible, .thumb.active { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .thumb img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; }
+  .thumb span { display: block; padding: 8px 12px 10px; font-size: 14.5px; }
+
+  pre { position: relative; background: #07090d; border: 1px solid var(--line); border-radius: 14px;
+        padding: 18px 20px; overflow-x: auto; font: 14.5px/1.6 ui-monospace, "JetBrains Mono", Menlo, monospace;
+        color: #cfe3ff; margin: 0 0 14px; }
+  .copy { position: absolute; top: 10px; right: 10px; font: inherit; font-size: 13px; cursor: pointer;
+          background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; }
+  .two { display: grid; gap: 28px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); align-items: start; }
+  .note { color: var(--dim); font-size: 15px; }
+  footer { border-top: 1px solid var(--line); padding: 34px 0 48px; color: var(--dim); font-size: 15px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <canvas id="stage" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <h1>GprEngine</h1>
+    <p class="lead">Wallpapers vivos para o GNOME. Shaders desenhados na placa de vídeo, que
+      param sozinhos quando ninguém está olhando.</p>
+    <div class="actions">
+      <a class="button primary" href="#instalar">Instalar no Ubuntu</a>
+      <a class="button ghost" href="https://github.com/gustavoreimche/gprengine-gnome">Código no GitHub</a>
+    </div>
+    <p class="now" id="now">O fundo desta página é um wallpaper rodando ao vivo.</p>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <h2>Feito para ficar atrás do seu trabalho</h2>
+    <p class="sub">O fundo se mexe sem cobrar o preço disso em bateria e ventoinha.</p>
+    <div class="grid">
+      <div class="card"><h3>Pausa automática</h3><p>Para de desenhar em tela cheia, com janelas cobrindo a área de trabalho, com a tela desligada e, se você quiser, na bateria.</p></div>
+      <div class="card"><h3>Nítido em qualquer tela</h3><p>Desenhado pixel a pixel em cada monitor, com escala de renderização e limite de quadros ajustáveis.</p></div>
+      <div class="card"><h3>Listas que trocam sozinhas</h3><p>Monte quantas listas quiser e escolha de quanto em quanto tempo o wallpaper muda.</p></div>
+      <div class="card"><h3>Velocidade ao seu gosto</h3><p>Um controle deixa qualquer animação mais calma ou mais viva, na hora.</p></div>
+      <div class="card"><h3>Crie o seu</h3><p>Um wallpaper é um arquivo de shader no estilo do Shadertoy. Salvou, recarregou.</p></div>
+      <div class="card"><h3>Compartilhe</h3><p>Exporte um arquivo para mandar a alguém, ou baixe mais pelo catálogo dentro do app.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="galeria">
+  <div class="wrap">
+    <h2>Catálogo</h2>
+    <p class="sub">Clique em um para vê-lo rodando no topo da página. São os mesmos arquivos que o
+      app usa.</p>
+    <div class="gallery" id="gallery"></div>
+  </div>
+</section>
+
+<section id="instalar">
+  <div class="wrap">
+    <h2>Instalar</h2>
+    <p class="sub">Para Ubuntu com GNOME Shell 50 (Wayland). As atualizações chegam junto com as do
+      sistema.</p>
+    <pre><button class="copy" type="button">Copiar</button><code>curl -fsSL https://gustavoreimche.github.io/gprengine-gnome/gprengine.gpg | sudo tee /usr/share/keyrings/gprengine.gpg > /dev/null
+echo "deb [signed-by=/usr/share/keyrings/gprengine.gpg] https://gustavoreimche.github.io/gprengine-gnome stable main" | sudo tee /etc/apt/sources.list.d/gprengine.list
+sudo apt update && sudo apt install gprengine</code></pre>
+    <p class="note">Depois saia e entre na sessão e ative a extensão:</p>
+    <pre><button class="copy" type="button">Copiar</button><code>gnome-extensions enable gprengine@gpr</code></pre>
+    <p class="note">Prefere o arquivo? O <code>.deb</code> de cada versão está em
+      <a href="https://github.com/gustavoreimche/gprengine-gnome/releases">Releases</a>.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap two">
+    <div>
+      <h2>Escreva um wallpaper</h2>
+      <p class="sub">Uma função que devolve a cor de cada pixel. O tempo faz a animação.</p>
+      <p class="note">No app: <b>+</b> › <b>Criar um wallpaper…</b>. Ele cria a pasta, aplica e abre o
+        arquivo; cada vez que você salva, o fundo recarrega.</p>
+      <p><a href="https://github.com/gustavoreimche/gprengine-gnome/blob/main/docs/wallpapers-personalizados.md">Ler o guia completo</a></p>
+    </div>
+    <pre><code>void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+    vec2 uv = fragCoord / iResolution.xy;
+    float onda = 0.5 + 0.5 * sin((uv.x + uv.y) * 6.0 + iTime * 0.4);
+    vec3 noite = vec3(0.05, 0.07, 0.16);
+    vec3 aurora = vec3(0.95, 0.45, 0.35);
+    fragColor = vec4(mix(noite, aurora, onda * uv.y), 1.0);
+}</code></pre>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>GprEngine · software livre, GPL-3.0</span>
+    <span>Combina com o <a href="https://gustavoreimche.github.io/gprdock/">gprdock</a>, um dock com widgets vivos.</span>
+  </div>
+</footer>
+
+<script>
+const HEADER = `#version 300 es
+precision highp float;
+precision highp int;
+uniform vec3 iResolution;
+uniform float iTime;
+uniform float iTimeDelta;
+uniform int iFrame;
+uniform vec4 iMouse;
+uniform vec4 iDate;
+out vec4 outColor;
+#line 1
+`;
+const FOOTER = `
+void main() {
+    vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
+    mainImage(color, gl_FragCoord.xy);
+    outColor = vec4(color.rgb, 1.0);
+}`;
+const VERTEX = `#version 300 es
+void main() {
+    vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));
+    gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+}`;
+const FIRST = ['jerusalem', 'galileia', 'aurora', 'ondas'];
+
+const canvas = document.getElementById('stage');
+const gl = canvas.getContext('webgl2', {antialias: false, powerPreference: 'low-power'});
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let current = null, frame = 0, visible = true, started = performance.now();
+
+function compile(type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
+        throw new Error(gl.getShaderInfoLog(shader));
+    return shader;
+}
+
+function build(source) {
+    const program = gl.createProgram();
+    gl.attachShader(program, compile(gl.VERTEX_SHADER, VERTEX));
+    gl.attachShader(program, compile(gl.FRAGMENT_SHADER, HEADER + source + FOOTER));
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS))
+        throw new Error(gl.getProgramInfoLog(program));
+    const loc = {};
+    for (const name of ['iResolution', 'iTime', 'iTimeDelta', 'iFrame', 'iDate'])
+        loc[name] = gl.getUniformLocation(program, name);
+    return {program, loc};
+}
+
+function resize() {
+    // Metade da densidade em telas muito densas: o fundo não precisa de mais.
+    const scale = Math.min(devicePixelRatio || 1, 1.5);
+    const width = Math.round(canvas.clientWidth * scale);
+    const height = Math.round(canvas.clientHeight * scale);
+    if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+    }
+}
+
+function draw() {
+    if (!current)
+        return;
+    resize();
+    const now = new Date();
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.useProgram(current.program);
+    gl.uniform3f(current.loc.iResolution, canvas.width, canvas.height, 1);
+    gl.uniform1f(current.loc.iTime, (performance.now() - started) / 1000);
+    gl.uniform1f(current.loc.iTimeDelta, 1 / 30);
+    gl.uniform1i(current.loc.iFrame, frame++);
+    gl.uniform4f(current.loc.iDate, now.getFullYear(), now.getMonth(), now.getDate(),
+        now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds());
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+// Como o app: 30 quadros por segundo, e nada quando o topo saiu da tela.
+let last = 0;
+function loop(time) {
+    requestAnimationFrame(loop);
+    if (!visible || document.hidden || time - last < 33)
+        return;
+    last = time;
+    draw();
+}
+
+async function show(entry, button) {
+    if (!gl)
+        return;
+    try {
+        const source = await (await fetch(`catalog/shaders/${entry.id}.glsl`)).text();
+        const next = build(source);
+        if (current)
+            gl.deleteProgram(current.program);
+        current = next;
+        document.getElementById('now').innerHTML =
+            `Rodando ao vivo: <b>${entry.name}</b>. Escolha outro no <a href="#galeria">catálogo</a>.`;
+        document.querySelectorAll('.thumb.active').forEach(t => t.classList.remove('active'));
+        button?.classList.add('active');
+        draw();
+    } catch (e) {
+        console.warn(entry.id, e);
+    }
+}
+
+async function start() {
+    let entries = [];
+    try {
+        entries = (await (await fetch('catalog/index.json')).json()).wallpapers;
+    } catch (e) {
+        console.warn('catálogo indisponível', e);
+        return;
+    }
+    const gallery = document.getElementById('gallery');
+    const buttons = new Map();
+    for (const entry of entries) {
+        const button = document.createElement('button');
+        button.className = 'thumb';
+        button.type = 'button';
+        button.innerHTML = (entry.thumbnail
+            ? `<img loading="lazy" alt="" src="catalog/thumbs/${entry.id}.jpg">` : '') +
+            `<span></span>`;
+        button.querySelector('span').textContent = entry.name;
+        button.addEventListener('click', () => {
+            show(entry, button);
+            document.querySelector('.hero').scrollIntoView();
+        });
+        gallery.append(button);
+        buttons.set(entry.id, button);
+    }
+    const first = FIRST.map(id => entries.find(e => e.id === id)).find(Boolean) ?? entries[0];
+    if (first)
+        await show(first, buttons.get(first.id));
+    if (gl && !reduced) {
+        new IntersectionObserver(([hit]) => (visible = hit.isIntersecting))
+            .observe(document.querySelector('.hero'));
+        requestAnimationFrame(loop);
+    }
+}
+
+for (const button of document.querySelectorAll('.copy')) {
+    button.addEventListener('click', async () => {
+        await navigator.clipboard.writeText(button.parentElement.querySelector('code').textContent);
+        button.textContent = 'Copiado';
+        setTimeout(() => (button.textContent = 'Copiar'), 1600);
+    });
+}
+addEventListener('resize', draw);
+start();
+</script>
+</body>
+</html>
