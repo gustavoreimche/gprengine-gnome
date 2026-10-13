@@ -68,9 +68,12 @@ class WallpaperWindow(Gtk.Window):
         self.size = (0, 0)
         self.target_size = (0, 0)
 
-        # Pequena de propósito: perto do tamanho da tela o Mutter a
-        # maximizaria. Quem dá o tamanho final é a extensão.
-        self.set_default_size(640, 400)
+        # Do tamanho exato do monitor, para o shader sair pixel a pixel. Tem
+        # de ser tamanho mínimo: o GTK não deixa uma janela comum passar da
+        # área útil que o compositor informa, a não ser que ela não caiba em
+        # menos. A extensão cuida da posição.
+        geometry = monitor.get_geometry()
+        self.set_size_request(geometry.width, geometry.height)
         self.set_focusable(False)
         # Alt+F4 ou "fechar" do shell não derrubam o wallpaper.
         self.connect('close-request', lambda *_: True)

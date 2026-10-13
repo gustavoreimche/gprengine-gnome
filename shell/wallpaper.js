@@ -224,10 +224,12 @@ export class WallpaperManager {
             .get_monitor_for_connector(connector);
     }
 
-    // O Mutter não deixa uma janela comum passar do tamanho da área útil, e
-    // tela cheia esconderia o painel. Então a janela fica do maior tamanho que
-    // cabe na área útil com a proporção do monitor, e o clone a amplia até a
-    // tela inteira sem distorcer.
+    // A janela tem exatamente o tamanho do monitor, para o shader ser
+    // desenhado pixel a pixel: menor que isso, o clone teria de ampliar a
+    // imagem e ela perderia definição. Tela cheia esconderia o painel, e o
+    // Mutter não deixa uma janela comum cobrir o painel; então ela começa no
+    // canto da área útil e a sobra fica para fora da tela. Não faz diferença:
+    // a janela é invisível e o clone mostra a textura inteira.
     _place(window) {
         const index = this._monitorOf(window);
         const monitor = Main.layoutManager.monitors[index];
@@ -236,14 +238,12 @@ export class WallpaperManager {
         if (window.is_maximized())
             window.unmaximize();
         const area = Main.layoutManager.getWorkAreaForMonitor(index);
-        const scale = Math.min(
-            area.width / monitor.width, area.height / monitor.height);
-        const width = Math.floor(monitor.width * scale);
-        const height = Math.floor(monitor.height * scale);
         const frame = window.get_frame_rect();
         if (frame.x !== area.x || frame.y !== area.y ||
-            frame.width !== width || frame.height !== height)
-            window.move_resize_frame(true, area.x, area.y, width, height);
+            frame.width !== monitor.width || frame.height !== monitor.height) {
+            window.move_resize_frame(
+                true, area.x, area.y, monitor.width, monitor.height);
+        }
     }
 
     _placeAll() {

@@ -2,7 +2,7 @@
 # GNOME Shell headless e isolado para testar sem tocar na sessão em uso:
 # barramento, dconf, dados e socket Wayland próprios.
 #
-#   tests/headless.sh start [LARGURAxALTURA]
+#   tests/headless.sh start [LARGURAxALTURA[,LARGURAxALTURA...]]
 #   tests/headless.sh run <comando...>     roda algo dentro da sessão de teste
 #   tests/headless.sh eval '<js>'          avalia JS dentro do shell
 #   tests/headless.sh shot <arquivo.png>
@@ -64,8 +64,10 @@ start)
             gsettings --schemadir "$GPRDOCK/schemas" set \
                 org.gnome.shell.extensions.gprdock widgets "[\"engine\", \"battery\"]"
         fi
+        monitors=()
+        for size in ${1//,/ }; do monitors+=(--virtual-monitor "$size"); done
         exec gnome-shell --headless --wayland --no-x11 --unsafe-mode \
-            --virtual-monitor "$1" --wayland-display "$WAYLAND_DISPLAY"
+            "${monitors[@]}" --wayland-display "$WAYLAND_DISPLAY"
     ' "$ROOT" "$size" "$enabled" > "$ROOT/shell.log" 2>&1 &
     echo $! > "$ROOT/pid"
     for _ in $(seq 50); do
