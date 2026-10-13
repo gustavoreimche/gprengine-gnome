@@ -7,6 +7,25 @@ Inspirado no [PrimoEngine](https://engine.oprimo.dev/); irmão do
 
 ## Instalar
 
+### Pelo repositório APT (Ubuntu, com atualização automática)
+
+```bash
+curl -fsSL https://gustavoreimche.github.io/gprengine-gnome/gprengine.gpg | sudo tee /usr/share/keyrings/gprengine.gpg > /dev/null
+echo "deb [signed-by=/usr/share/keyrings/gprengine.gpg] https://gustavoreimche.github.io/gprengine-gnome stable main" | sudo tee /etc/apt/sources.list.d/gprengine.list
+sudo apt update && sudo apt install gprengine
+```
+
+Depois saia e entre na sessão e ative a extensão:
+
+```bash
+gnome-extensions enable gprengine@gpr
+```
+
+As versões novas chegam junto com as atualizações do sistema. O `.deb` avulso
+de cada versão fica em [Releases](https://github.com/gustavoreimche/gprengine-gnome/releases).
+
+### A partir do código
+
 ```bash
 ./install.sh     # symlinks, schema, atalho da galeria
 ./ativar.sh      # liga a extensão
@@ -14,8 +33,17 @@ Inspirado no [PrimoEngine](https://engine.oprimo.dev/); irmão do
 
 Depois saia e entre na sessão. Para remover: `./uninstall.sh`.
 
-Não precisa de pacote novo: usa o Python do sistema (`/usr/bin/python3`) com
-GTK 4 e libadwaita, que o Ubuntu já traz.
+Usa o Python do sistema (`/usr/bin/python3`) com GTK 4 e libadwaita, que o
+Ubuntu já traz.
+
+### Lançar uma versão
+
+```bash
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+O GitHub Actions monta o `.deb` (`packaging/build-deb.sh`), publica a release e
+refaz o repositório APT assinado no GitHub Pages (`packaging/build-repo.sh`).
 
 ## Usar
 
@@ -115,3 +143,7 @@ Com `GPRDOCK=~/gprdock` o dock sobe junto, com o tile.
 - A placa dedicada depende do driver aceitar o offload no Wayland; se não
   aceitar, a extensão volta sozinha para a integrada. A galeria mostra qual
   está em uso.
+
+## Licença
+
+GPL-3.0-or-later. Veja [LICENSE](LICENSE).

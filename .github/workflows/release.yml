@@ -1,0 +1,62 @@
+# A cada tag vX.Y.Z: monta o .deb, publica como release e refaz o repositório
+# APT no GitHub Pages com todos os .deb já lançados.
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ferramentas
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-bin dpkg-dev apt-utils gnupg
+
+      - name: Montar o .deb
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: packaging/build-deb.sh "${GITHUB_REF_NAME#v}" dist
+
+      - name: Publicar a release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: gh release create "$GITHUB_REF_NAME" dist/*.deb --generate-notes --verify-tag
+
+      - name: Reunir todos os .deb lançados
+        run: |
+          mkdir -p debs
+          for tag in $(gh release list --limit 200 --json tagName --jq '.[].tagName'); do
+            gh release download "$tag" --pattern '*.deb' --dir debs --skip-existing || true
+          done
+          ls -l debs
+
+      - name: Montar e assinar o repositório APT
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
+          key="$(gpg --list-secret-keys --with-colons | awk -F: '$1 == "fpr" { print $10; exit }')"
+          packaging/build-repo.sh debs site "$key"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
