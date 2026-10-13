@@ -60,14 +60,14 @@ jobs:
         run: |
           printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
           key="$(gpg --list-secret-keys --with-colons | awk -F: '$1 == "fpr" { print $10; exit }')"
-          packaging/build-repo.sh debs site "$key"
+          packaging/build-repo.sh debs _site "$key"
 
       - name: Montar o catálogo de wallpapers
-        run: packaging/build-catalog.py site/catalog
+        run: packaging/build-catalog.py _site/catalog
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: _site
 
       - id: deploy
         uses: actions/deploy-pages@v4

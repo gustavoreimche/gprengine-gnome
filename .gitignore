@@ -2,3 +2,4 @@ schemas/gschemas.compiled
 .dev/
 __pycache__/
 dist/
+_site/
