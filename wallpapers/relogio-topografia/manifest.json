@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "relogio-topografia",
+  "name": "Relógio topografia",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}

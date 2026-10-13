@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "malha-uva",
+  "name": "Malha uva",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}

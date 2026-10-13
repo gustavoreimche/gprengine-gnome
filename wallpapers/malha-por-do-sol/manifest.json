@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "malha-por-do-sol",
+  "name": "Malha pôr do sol",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}
