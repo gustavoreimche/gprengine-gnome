@@ -71,6 +71,7 @@ uniform float iTimeDelta;
 uniform int iFrame;
 uniform vec4 iMouse;
 uniform vec4 iDate;
+uniform vec4 iWeather;   // sem rede aqui: zero, céu limpo
 out vec4 primo_FragColor;
 #line 1
 `;

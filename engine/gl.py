@@ -109,6 +109,7 @@ uniform float iTimeDelta;
 uniform int iFrame;
 uniform vec4 iMouse;
 uniform vec4 iDate;
+uniform vec4 iWeather;
 out vec4 primo_FragColor;
 #line 1
 """
@@ -129,7 +130,8 @@ void main() {
 }
 """
 
-UNIFORMS = ('iResolution', 'iTime', 'iTimeDelta', 'iFrame', 'iMouse', 'iDate')
+UNIFORMS = ('iResolution', 'iTime', 'iTimeDelta', 'iFrame', 'iMouse', 'iDate',
+            'iWeather')
 
 
 class ShaderError(Exception):
@@ -192,7 +194,7 @@ class Program:
         self.loc = {name: glGetUniformLocation(self.id, name.encode())
                     for name in UNIFORMS}
 
-    def draw(self, width, height, time, delta, frame, date):
+    def draw(self, width, height, time, delta, frame, date, weather):
         glUseProgram(self.id)
         loc = self.loc
         glUniform3f(loc['iResolution'], width, height, 1.0)
@@ -201,6 +203,7 @@ class Program:
         glUniform1i(loc['iFrame'], frame)
         glUniform4f(loc['iMouse'], 0.0, 0.0, 0.0, 0.0)
         glUniform4f(loc['iDate'], *date)
+        glUniform4f(loc['iWeather'], *weather)
         glDrawArrays(TRIANGLES, 0, 3)
 
     def destroy(self):

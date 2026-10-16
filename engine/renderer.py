@@ -8,6 +8,7 @@ import json
 import os
 import sys
 import random
+import threading
 import time
 
 import cairo
@@ -18,7 +19,7 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Gtk  # noqa: E402
 
-from . import APP_ID, OBJECT_PATH, gl, packages  # noqa: E402
+from . import APP_ID, OBJECT_PATH, gl, packages, weather  # noqa: E402
 from .settings import load_settings  # noqa: E402
 
 INTERFACE_XML = f"""
@@ -49,6 +50,12 @@ THUMB_SIZE = (480, 300)
 THUMB_TIME = 5.0
 # Um salto maior que isso entre dois quadros é engasgo, não animação.
 MAX_DELTA = 0.25
+# O tempo é consultado a cada WEATHER_EVERY s (e, numa falha, de novo em
+# WEATHER_RETRY s), e só enquanto o wallpaper atual usa iWeather. Um valor
+# novo entra aos poucos, ao longo de WEATHER_BLEND s.
+WEATHER_EVERY = 15 * 60
+WEATHER_RETRY = 5 * 60
+WEATHER_BLEND = 90.0
 
 
 class WallpaperWindow(Gtk.Window):
@@ -219,7 +226,8 @@ class WallpaperWindow(Gtk.Window):
         for cap in (gl.BLEND, gl.DEPTH_TEST, gl.SCISSOR_TEST):
             gl.glDisable(cap)
         gl.glBindVertexArray(self._vao)
-        args = (now, delta, self.frames, self.engine.date())
+        args = (now, delta, self.frames, self.engine.date(),
+                self.engine.weather())
         if (tw, th) == (width, height):
             self._program.draw(width, height, *args)
         else:
@@ -247,7 +255,7 @@ class WallpaperWindow(Gtk.Window):
             gl.glViewport(0, 0, width, height)
             gl.glBindVertexArray(self._vao)
             program.draw(width, height, THUMB_TIME, 1 / 30, 150,
-                         self.engine.date())
+                         self.engine.date(), self.engine.weather())
             gl.glBindVertexArray(0)
             gl.glUseProgram(0)
             data = gl.read_rgba(width, height)
@@ -291,6 +299,12 @@ class Engine(Gtk.Application):
         self._validated = False
         self._registration = 0
         self._fps_window = (time.monotonic(), 0, 0.0)
+        self._weather_from = self._weather_to = weather.CLEAR
+        self._weather_since = 0.0
+        self._weather_next = 0.0
+        self._weather_where = None
+        self._weather_busy = False
+        self._weather_info = {}
 
     # --- ciclo de vida ---
 
@@ -315,8 +329,17 @@ class Engine(Gtk.Application):
         self.settings.connect('changed::playlist-active', self._on_playlist_setting)
         self.settings.connect('changed::playlist-interval', self._restart_rotation)
         self._restart_rotation()
+        cached, info = weather.load_cache()
+        if cached:
+            self._weather_from = self._weather_to = cached
+            self._weather_info = info
+            self._weather_where = (info.get('latitude'), info.get('longitude'))
+        for key in ('weather-latitude', 'weather-longitude'):
+            self.settings.connect(f'changed::{key}', lambda *_: self._weather_tick())
+        GLib.timeout_add_seconds(60, self._weather_tick)
         self.packages = packages.discover()
         self.current = self.settings.get_string('current')
+        self._weather_tick()
 
         self.hold()
         monitors = Gdk.Display.get_default().get_monitors()
@@ -377,6 +400,54 @@ class Engine(Gtk.Application):
         return (float(t.tm_year), float(t.tm_mon - 1), float(t.tm_mday),
                 t.tm_hour * 3600.0 + t.tm_min * 60.0 + t.tm_sec + now % 1.0)
 
+    # --- tempo (iWeather) ---
+
+    def weather(self):
+        """O vec4 iWeather deste quadro, passando do valor antigo ao novo."""
+        k = min(max((time.monotonic() - self._weather_since) / WEATHER_BLEND, 0.0), 1.0)
+        k = k * k * (3.0 - 2.0 * k)
+        return tuple(a + (b - a) * k for a, b in zip(self._weather_from, self._weather_to))
+
+    def _uses_weather(self):
+        pkg = self.current_package()
+        try:
+            return bool(pkg) and 'iWeather' in pkg.source()
+        except OSError:
+            return False
+
+    def _weather_tick(self):
+        where = (self.settings.get_double('weather-latitude'),
+                 self.settings.get_double('weather-longitude'))
+        due = time.monotonic() >= self._weather_next or where != self._weather_where
+        if due and not self._weather_busy and self._uses_weather():
+            self._weather_busy = True
+            threading.Thread(target=self._fetch_weather, args=(where,),
+                             daemon=True).start()
+        return True
+
+    def _fetch_weather(self, where):
+        try:
+            value, current = weather.fetch(*where)
+            weather.save_cache(value, current, *where, time.time())
+            GLib.idle_add(self._on_weather, where, value, current, None)
+        except (weather.WeatherError, OSError) as e:
+            GLib.idle_add(self._on_weather, where, None, None, str(e))
+
+    def _on_weather(self, where, value, current, error):
+        self._weather_busy = False
+        if error:
+            print(f'gprengine: {error}', file=sys.stderr)
+            self._weather_next = time.monotonic() + WEATHER_RETRY
+            return False
+        self._weather_from = self.weather()
+        self._weather_to = value
+        self._weather_since = time.monotonic()
+        self._weather_next = self._weather_since + WEATHER_EVERY
+        self._weather_where = where
+        self._weather_info = {'current': current, 'fetched_at': time.time()}
+        self.redraw()
+        return False
+
     def package(self, pkg_id):
         return next((p for p in self.packages if p.id == pkg_id), None)
 
@@ -429,6 +500,7 @@ class Engine(Gtk.Application):
             self.settings.set_string('current', pkg_id)
         self.redraw()
         self._emit_changed(['Current'])
+        self._weather_tick()
 
     def redraw(self):
         for window in self.windows.values():
@@ -664,6 +736,9 @@ class Engine(Gtk.Application):
             'speed': self._speed,
             'monitor_reasons': {c: sorted(r) for c, r in self.monitor_reasons.items() if r},
             'playlist': self.settings.get_string('playlist-active'),
+            'weather': {'city': self.settings.get_string('weather-city'),
+                        'value': [round(v, 3) for v in self._weather_to],
+                        'current': self._weather_info.get('current')},
             'gl_renderer': self.gl_renderer,
             'gl_version': self.gl_version,
             'windows': [{'title': w.get_title(), 'size': w.size,

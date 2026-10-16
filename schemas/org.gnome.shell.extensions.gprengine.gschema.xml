@@ -68,5 +68,19 @@
       <default>'integrated'</default>
       <summary>GPU usada pelo renderer</summary>
     </key>
+    <key name="weather-city" type="s">
+      <default>'Araranguá, Santa Catarina, BR'</default>
+      <summary>Cidade do tempo que os wallpapers mostram (iWeather)</summary>
+    </key>
+    <key name="weather-latitude" type="d">
+      <range min="-90.0" max="90.0"/>
+      <default>-28.93575</default>
+      <summary>Latitude da cidade do tempo</summary>
+    </key>
+    <key name="weather-longitude" type="d">
+      <range min="-180.0" max="180.0"/>
+      <default>-49.49538</default>
+      <summary>Longitude da cidade do tempo</summary>
+    </key>
   </schema>
 </schemalist>

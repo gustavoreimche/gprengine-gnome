@@ -17,7 +17,7 @@ gi.require_version('Adw', '1')
 gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import Adw, Gdk, GdkPixbuf, Gio, GLib, Gtk  # noqa: E402
 
-from . import APP_ID, GALLERY_ID, OBJECT_PATH, catalog, custom, packages  # noqa: E402
+from . import APP_ID, GALLERY_ID, OBJECT_PATH, catalog, custom, packages, weather  # noqa: E402
 from .settings import load_settings  # noqa: E402
 
 THUMB_WIDTH = 256
@@ -42,6 +42,31 @@ FPS = [(15, '15 FPS'), (20, '20 FPS'), (30, '30 FPS'), (60, '60 FPS')]
 GPUS = [('integrated', 'Integrada'), ('discrete', 'Dedicada (NVIDIA)')]
 BATTERY = [('continue', 'Continuar'), ('limit', 'Limitar a 15 FPS'),
            ('pause', 'Pausar')]
+# Siglas dos estados, para "Araranguá, SC" achar "Santa Catarina".
+_UF = {
+    'Acre': 'AC', 'Alagoas': 'AL', 'Amapá': 'AP', 'Amazonas': 'AM',
+    'Bahia': 'BA', 'Ceará': 'CE', 'Distrito Federal': 'DF',
+    'Espírito Santo': 'ES', 'Goiás': 'GO', 'Maranhão': 'MA',
+    'Mato Grosso': 'MT', 'Mato Grosso do Sul': 'MS', 'Minas Gerais': 'MG',
+    'Pará': 'PA', 'Paraíba': 'PB', 'Paraná': 'PR', 'Pernambuco': 'PE',
+    'Piauí': 'PI', 'Rio de Janeiro': 'RJ', 'Rio Grande do Norte': 'RN',
+    'Rio Grande do Sul': 'RS', 'Rondônia': 'RO', 'Roraima': 'RR',
+    'Santa Catarina': 'SC', 'São Paulo': 'SP', 'Sergipe': 'SE',
+    'Tocantins': 'TO',
+}
+
+
+def _best_city(typed, found):
+    """Com estado ou país no texto ("Araranguá, SC"), prefere o que bate."""
+    hints = [h.strip().lower() for h in typed.split(',')[1:] if h.strip()]
+
+    def matches(label):
+        parts = label.split(', ')
+        words = [p.lower() for p in parts] + \
+            [_UF.get(p, '').lower() for p in parts]
+        return all(h in words for h in hints)
+
+    return next((f for f in found if matches(f[0])), found[0])
 
 
 class Card(Gtk.FlowBoxChild):
@@ -589,7 +614,52 @@ class GalleryWindow(Adw.ApplicationWindow):
             GPUS)
         performance.add(self.gpu_row)
         page.add(performance)
+        page.add(self._build_weather())
         return page
+
+    def _build_weather(self):
+        group = Adw.PreferencesGroup(
+            title='Tempo',
+            description='Os wallpapers que usam o tempo (como o Relógio do '
+                        'sol e da lua com tempo) mostram nuvens, chuva e '
+                        'trovoada da cidade escolhida. A previsão vem do '
+                        'Open-Meteo; só a localização da cidade sai daqui.')
+        self.city_row = Adw.EntryRow(title='Cidade', show_apply_button=True)
+        self.city_row.set_text(self.settings.get_string('weather-city'))
+        self.city_row.connect('apply', self._on_city)
+        group.add(self.city_row)
+        return group
+
+    def _on_city(self, row):
+        name = row.get_text().strip()
+        if not name:
+            return
+        # Só o nome da cidade, sem o estado e o país que o rótulo traz.
+        query = name.split(',')[0].strip()
+
+        def work():
+            try:
+                found = weather.geocode(query)
+                GLib.idle_add(self._on_city_found, name, found, None)
+            except weather.WeatherError as e:
+                GLib.idle_add(self._on_city_found, name, None, str(e))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _on_city_found(self, name, found, error):
+        if error:
+            self.toast(error)
+            return False
+        if not found:
+            self.toast(f'Não achei a cidade "{name}"')
+            return False
+        label, lat, lon = _best_city(name, found)
+        self.settings.set_string('weather-city', label)
+        self.settings.set_double('weather-latitude', lat)
+        self.settings.set_double('weather-longitude', lon)
+        self.city_row.set_text(label)
+        self.toast(f'Tempo de {label}')
+        return False
 
     # --- D-Bus ---
 

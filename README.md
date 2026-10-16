@@ -46,7 +46,8 @@ repositório APT assinado e o catálogo no GitHub Pages
 ## Usar
 
 - **Galeria**: app "GprEngine" no menu. Clique num cartão para aplicar; a
-  aba Ajustes controla pausa, escala, FPS e placa de vídeo.
+  aba Ajustes controla pausa, escala, FPS, placa de vídeo e a cidade
+  do tempo (para os wallpapers que mostram chuva e nuvens de verdade).
 - **Tile no gprdock**: adicione o widget "Wallpaper vivo" nas preferências
   do dock. O clique abre pausar, próximo, anterior e a galeria.
 - **Botão direito da área de trabalho**: `tools/ding-menu.sh` põe um submenu

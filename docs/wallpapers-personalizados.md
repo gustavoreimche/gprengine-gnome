@@ -75,6 +75,7 @@ A linguagem é GLSL 3.30. O que chega pronto para você:
 | `iFrame` | `int` | Número do quadro. |
 | `iDate` | `vec4` | Ano, mês (0 a 11), dia e segundos desde a meia-noite, na hora local, com a fração do segundo. |
 | `iMouse` | `vec4` | Sempre zero: um wallpaper não recebe o mouse. |
+| `iWeather` | `vec4` | Tempo de agora na cidade dos Ajustes, de 0 a 1: `x` nebulosidade, `y` chuva, `z` trovoada, `w` vento. Só é consultado (no Open-Meteo, a cada 15 min) enquanto o wallpaper atual usa `iWeather`; um valor novo entra aos poucos, em 90 s. |
 
 Shaders de uma passada do Shadertoy costumam rodar só colando o código. Os que
 usam `iChannel` (texturas), buffers ou áudio ainda não funcionam.

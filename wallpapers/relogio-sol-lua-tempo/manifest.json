@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "relogio-sol-lua-tempo",
+  "name": "Relógio do sol e da lua com tempo",
+  "author": "gpr",
+  "type": "glsl",
+  "entry": "content/shader.glsl"
+}
