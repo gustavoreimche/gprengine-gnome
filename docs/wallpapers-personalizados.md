@@ -73,7 +73,7 @@ A linguagem é GLSL 3.30. O que chega pronto para você:
 | `iTime` | `float` | Segundos de animação. Para quando o wallpaper pausa e segue o ajuste de velocidade. |
 | `iTimeDelta` | `float` | Segundos desde o quadro anterior. |
 | `iFrame` | `int` | Número do quadro. |
-| `iDate` | `vec4` | Ano, mês (0 a 11), dia e segundos desde a meia-noite, na hora local. |
+| `iDate` | `vec4` | Ano, mês (0 a 11), dia e segundos desde a meia-noite, na hora local, com a fração do segundo. |
 | `iMouse` | `vec4` | Sempre zero: um wallpaper não recebe o mouse. |
 
 Shaders de uma passada do Shadertoy costumam rodar só colando o código. Os que

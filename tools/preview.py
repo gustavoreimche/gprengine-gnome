@@ -127,7 +127,7 @@ function draw(entry, target, time, frame) {
     gl.uniform1i(entry.loc.iFrame, frame);
     const now = new Date();
     gl.uniform4f(entry.loc.iDate, now.getFullYear(), now.getMonth(), now.getDate(),
-        now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds());
+        now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds() + now.getMilliseconds() / 1000);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     target.getContext('2d').drawImage(work, 0, 0);
 }

@@ -65,7 +65,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 w = vec2(uv.x * aspect, uv.y);
     float px = 1.2 / iResolution.y;
     int secs = int(iDate.w);
-    int hh = secs / 3600, mm = (secs / 60) % 60, ss = secs % 60;
+    int hh = secs / 3600, mm = (secs / 60) % 60;
     int year = int(iDate.x), month = int(iDate.y) + 1, day = int(iDate.z);
     const float PI = 3.14159265;
 
@@ -186,10 +186,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     d = dateLine((p + vec2(0.0, 0.068)) / S2, day, month, year) * S2;
     col = mix(col, halo, smoothstep(0.016, 0.0, d) * 0.16);
     col = mix(col, dim, smoothstep(px, -px, d - 0.0011));
-    // Barra dos segundos.
+    // Barra dos segundos, andando de forma contínua (iDate.w traz a fração).
     vec2 b = p + vec2(0.0, 0.112);
     col = mix(col, dim * 0.40 + halo * 0.25, smoothstep(px, -px, max(abs(b.x) - 0.075, abs(b.y) - 0.0009)));
-    float fill = max(max(-0.075 - b.x, b.x - (-0.075 + 0.150 * float(ss) / 59.0)), abs(b.y) - 0.0013);
+    float fill = max(max(-0.075 - b.x, b.x - (-0.075 + 0.150 * fract(iDate.w / 60.0))), abs(b.y) - 0.0013);
     col = mix(col, ink, smoothstep(px, -px, fill));
 
     fragColor = vec4(col, 1.0);

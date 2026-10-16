@@ -370,9 +370,12 @@ class Engine(Gtk.Application):
 
     @staticmethod
     def date():
-        t = time.localtime()
+        # Como no Shadertoy, os segundos levam a fração: dá para animar
+        # ponteiros e barras de segundos sem pulos.
+        now = time.time()
+        t = time.localtime(now)
         return (float(t.tm_year), float(t.tm_mon - 1), float(t.tm_mday),
-                t.tm_hour * 3600.0 + t.tm_min * 60.0 + t.tm_sec)
+                t.tm_hour * 3600.0 + t.tm_min * 60.0 + t.tm_sec + now % 1.0)
 
     def package(self, pkg_id):
         return next((p for p in self.packages if p.id == pkg_id), None)

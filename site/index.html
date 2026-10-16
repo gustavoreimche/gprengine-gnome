@@ -218,7 +218,7 @@ function draw() {
     gl.uniform1f(current.loc.iTimeDelta, 1 / 30);
     gl.uniform1i(current.loc.iFrame, frame++);
     gl.uniform4f(current.loc.iDate, now.getFullYear(), now.getMonth(), now.getDate(),
-        now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds());
+        now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds() + now.getMilliseconds() / 1000);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 }
 
