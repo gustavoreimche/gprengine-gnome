@@ -4,7 +4,7 @@
 const float SUNRISE = 8.0;
 const float SUNSET = 17.0;
 
-// Dígitos de sete traços grossos com pontas redondas.
+// Dígitos de sete traços finos com pontas redondas (os do relogio-topografia).
 const int MASKS[10] = int[10](63, 6, 91, 79, 102, 109, 125, 7, 127, 111);
 
 float stroke(vec2 p, vec2 a, vec2 b) {
@@ -16,7 +16,6 @@ float stroke(vec2 p, vec2 a, vec2 b) {
 float digit(vec2 p, int n) {
     int m = MASKS[clamp(n, 0, 9)];
     const float a = 0.28, b = 0.50;
-    if (n == 1) p.x += a * 0.5;   // o 1 só tem traços à direita: centraliza
     float d = 1e3;
     if ((m & 1) != 0)  d = min(d, stroke(p, vec2(-a,  b), vec2( a,  b)));
     if ((m & 2) != 0)  d = min(d, stroke(p, vec2( a,  b), vec2( a, 0.0)));
@@ -66,7 +65,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 w = vec2(uv.x * aspect, uv.y);
     float px = 1.2 / iResolution.y;
     int secs = int(iDate.w);
-    int hh = secs / 3600, mm = (secs / 60) % 60;
+    int hh = secs / 3600, mm = (secs / 60) % 60, ss = secs % 60;
     int year = int(iDate.x), month = int(iDate.y) + 1, day = int(iDate.z);
     const float PI = 3.14159265;
 
@@ -172,23 +171,26 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
         col = mix(col, layer, smoothstep(px, -px, uv.y - e));
     }
 
-    // Relógio e data no meio da tela, com um halo para destacar do céu.
-    // A tinta troca de branca para azul-escura numa faixa curta, com o halo
-    // sempre do tom oposto, para não passar muito tempo num cinza sem contraste.
+    // Relógio no meio da tela, no desenho do relogio-topografia: hora, data
+    // mais apagada e a barra dos segundos. A tinta troca de branca para
+    // azul-escura numa faixa curta, com um halo do tom oposto atrás.
     float lightK = smoothstep(0.30, 0.40, dayK * (1.0 - duskK));
-    vec3 ink = mix(vec3(0.96, 0.97, 1.00), vec3(0.08, 0.17, 0.30), lightK);
+    vec3 ink = mix(vec3(0.92, 0.93, 0.95), vec3(0.08, 0.17, 0.30), lightK);
+    vec3 dim = mix(vec3(0.74, 0.76, 0.82), vec3(0.20, 0.30, 0.44), lightK);
     vec3 halo = mix(vec3(0.02, 0.03, 0.08), vec3(1.0), lightK);
-    const float S = 0.15, R = 0.012;   // altura dos dígitos e raio do traço
-    vec2 cp = p - vec2(0.0, 0.03);
-    float d = clockFace(cp / S, hh, mm) * S - R;
-    float ds = clockFace((cp + vec2(-0.004, 0.007)) / S, hh, mm) * S - R;
-    col = mix(col, halo, smoothstep(0.06, 0.0, d) * 0.20);
-    col = mix(col, col * 0.55, smoothstep(0.018, -0.004, ds) * 0.45);
-    col = mix(col, ink, smoothstep(px, -px, d));
-    const float S2 = 0.018;
-    d = dateLine((p - vec2(0.0, -0.14)) / S2, day, month, year) * S2;
-    col = mix(col, halo, smoothstep(0.025, 0.0, d) * 0.30);
-    col = mix(col, ink, smoothstep(px, -px, d - 0.0024) * 0.92);
+    const float S = 0.115;
+    float d = clockFace((p - vec2(0.0, 0.040)) / S, hh, mm) * S;
+    col = mix(col, halo, smoothstep(0.045, 0.0, d) * 0.16);
+    col = mix(col, ink, smoothstep(px, -px, d - 0.0032));
+    const float S2 = 0.0130;
+    d = dateLine((p + vec2(0.0, 0.068)) / S2, day, month, year) * S2;
+    col = mix(col, halo, smoothstep(0.016, 0.0, d) * 0.16);
+    col = mix(col, dim, smoothstep(px, -px, d - 0.0011));
+    // Barra dos segundos.
+    vec2 b = p + vec2(0.0, 0.112);
+    col = mix(col, dim * 0.40 + halo * 0.25, smoothstep(px, -px, max(abs(b.x) - 0.075, abs(b.y) - 0.0009)));
+    float fill = max(max(-0.075 - b.x, b.x - (-0.075 + 0.150 * float(ss) / 59.0)), abs(b.y) - 0.0013);
+    col = mix(col, ink, smoothstep(px, -px, fill));
 
     fragColor = vec4(col, 1.0);
 }

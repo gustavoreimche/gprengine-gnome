@@ -52,7 +52,9 @@ repositório APT assinado e o catálogo no GitHub Pages
 - **Botão direito da área de trabalho**: `tools/ding-menu.sh` põe um submenu
   GprEngine (galeria, próximo, anterior, recarregar) no menu do Desktop Icons
   do Ubuntu. Ele usa uma cópia da extensão em `~/.local/share`, sem mexer no
-  sistema; depois de atualizar o Ubuntu, rode de novo. Para desfazer:
+  sistema, e vale na próxima entrada na sessão. Com `--system` ele aplica
+  também no arquivo de `/usr/share` (com sudo) e o submenu aparece na hora.
+  Depois de atualizar o Ubuntu, rode de novo. Para desfazer:
   `tools/ding-menu.sh --remove`.
 - **Linha de comando**:
 
