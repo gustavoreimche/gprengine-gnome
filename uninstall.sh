@@ -8,6 +8,7 @@ DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
 APP="dev.gpr.GprEngine.Gallery"
 
 gnome-extensions disable "$UUID" 2>/dev/null || true
+"$(dirname "${BASH_SOURCE[0]}")/tools/ding-menu.sh" --remove
 
 for target in "$DATA/gnome-shell/extensions/$UUID" \
               "$DATA/gprengine/wallpapers" \

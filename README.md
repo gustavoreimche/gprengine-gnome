@@ -49,6 +49,11 @@ repositório APT assinado e o catálogo no GitHub Pages
   aba Ajustes controla pausa, escala, FPS e placa de vídeo.
 - **Tile no gprdock**: adicione o widget "Wallpaper vivo" nas preferências
   do dock. O clique abre pausar, próximo, anterior e a galeria.
+- **Botão direito da área de trabalho**: `tools/ding-menu.sh` põe um submenu
+  GprEngine (galeria, próximo, anterior, recarregar) no menu do Desktop Icons
+  do Ubuntu. Ele usa uma cópia da extensão em `~/.local/share`, sem mexer no
+  sistema; depois de atualizar o Ubuntu, rode de novo. Para desfazer:
+  `tools/ding-menu.sh --remove`.
 - **Linha de comando**:
 
   ```bash
